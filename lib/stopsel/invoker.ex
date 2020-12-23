@@ -3,12 +3,9 @@ defmodule Stopsel.Invoker do
 
   require Logger
 
-  def invoke(message, router, prefix \\ "") do
-    message = Message.Protocol.to_message(message)
-
-    with true <- String.starts_with?(message.message, prefix),
-         {:ok, {stopsel, function, assigns, params}} <-
-           Router.match_route(router, parse_path(message, prefix)) do
+  def invoke(%Message{} = message, router) do
+    with {:ok, {stopsel, function, assigns, params}} <-
+           Router.match_route(router, parse_path(message)) do
       message
       |> Message.assign(assigns)
       |> Message.put_params(params)
@@ -17,10 +14,50 @@ defmodule Stopsel.Invoker do
     end
   end
 
-  defp parse_path(%Message{message: message}, prefix) do
+  def invoke(message, router) do
+    message = %Message{
+      assigns: Message.Protocol.assigns(message),
+      content: Message.Protocol.content(message)
+    }
+
+    invoke(message, router)
+  end
+
+  def invoke(message, router, ""), do: invoke(message, router)
+  def invoke(message, router, nil), do: invoke(message, router)
+
+  def invoke(%Message{} = message, router, prefix) do
+    with {:ok, message} <- check_prefix(message, prefix) do
+      invoke(message, router)
+    end
+  end
+
+  def invoke(message, router, prefix) do
+    message = %Message{
+      assigns: Message.Protocol.assigns(message),
+      content: Message.Protocol.content(message)
+    }
+
+    invoke(message, router, prefix)
+  end
+
+  defp check_prefix(message, prefix) do
+    if String.starts_with?(message.message, prefix) do
+      new_message =
+        Map.update!(message, :message, fn message ->
+          message
+          |> String.trim_leading(prefix)
+          |> String.trim_leading()
+        end)
+
+      {:ok, new_message}
+    else
+      {:error, :wrong_prefix}
+    end
+  end
+
+  defp parse_path(%Message{content: message}) do
     message
-    |> String.trim_leading(prefix)
-    |> String.trim_leading()
     |> String.split(~r/["']/, trim: true)
     |> Enum.with_index()
     |> Enum.flat_map(fn

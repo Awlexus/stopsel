@@ -1,11 +1,15 @@
 defmodule Stopsel.Message do
-  defstruct assigns: %{}, params: %{}, halted?: false, message: nil
+  defstruct assigns: %{}, params: %{}, halted?: false, content: nil
+
+  @type assigns :: map
+  @type params :: map
+  @type content :: String.t()
 
   @type t :: %__MODULE__{
-          assigns: map(),
-          params: map(),
+          assigns: assigns(),
+          params: params(),
           halted?: boolean(),
-          message: String.t()
+          content: content()
         }
 
   def assign(%__MODULE__{assigns: assigns} = message, key, value) do
@@ -32,11 +36,14 @@ defmodule Stopsel.Message do
 end
 
 defprotocol Stopsel.Message.Protocol do
-  @doc "Converts the data to a stopsel message"
-  @spec to_message(t()) :: Stopsel.Message.t()
-  def to_message(data)
+  @spec assigns(t()) :: Stopsel.Message.assigns()
+  def assigns(data)
+
+  @spec content(t()) :: Stopsel.Message.content()
+  def content(data)
 end
 
 defimpl Stopsel.Message.Protocol, for: Stopsel.Message do
-  def to_message(message), do: message
+  def assigns(message), do: message.assigns
+  def content(message), do: message.content
 end

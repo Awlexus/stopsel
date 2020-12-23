@@ -8,73 +8,60 @@ defmodule Stopsel.Router do
   @type match :: {[{stopsel(), opts}], function(), assigns(), params()}
   @type match_error :: :no_match | {:multiple_matches, [match()]}
 
+  @doc false
+  use GenServer
+
+  def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def init(_), do: {:ok, nil}
+
   @doc """
   Load all commands from the given module into the router.
   Can also be used to reset the router for the given module.
   """
   @spec load_module(module()) :: :ok
-  def load_module(module) do
-    if router_exists?(module) do
-      :router.delete(module)
-    end
-
-    :router.new(module)
-
-    Enum.each(module.__commands__(), &add_route(module, &1))
-  end
+  def load_module(module), do: GenServer.call(__MODULE__, {:load_module, module})
 
   @doc """
   Remove the given module from the router
   """
   @spec unload_module(module()) :: boolean()
-  def unload_module(module), do: router_exists?(module) && :router.delete(module)
+  def unload_module(module), do: GenServer.call(__MODULE__, {:unload_module, module})
 
   @doc """
   Load one route that was previously removed back into the router
   """
   @spec load_route(module(), path()) :: :error | :ok
-  def load_route(module, path) do
-    with true <- router_exists?(module),
-         route when not is_nil(route) <- find_route(module, path) do
-      add_route(module, route)
-    else
-      _ -> :error
-    end
-  end
+  def load_route(module, path), do: GenServer.call(__MODULE__, {:load_route, module, path})
 
   @doc """
   Unload one route from the router
   """
   @spec unload_route(module(), path()) :: :error | :ok
-  def unload_route(module, path) do
-    with true <- router_exists?(module),
-         route when not is_nil(route) <- find_route(module, path) do
-      remove_route(module, route)
-      :ok
-    else
-      _ -> :error
-    end
-  end
+  def unload_route(module, path), do: GenServer.call(__MODULE__, {:unload_route, module, path})
 
   @doc """
-  try to match a
+  Try to find a matching route in the given router
   """
   @spec match_route(module(), path()) :: {:ok, match()} | {:error, match_error()}
   def match_route(module, path) do
-    case :router.route(module, compile_path(path)) do
-      [{:route, destination, params}] ->
-        {:ok, destination_with_params(destination, params)}
+    if router_exists?(module) do
+      case :router.route(module, compile_path(path)) do
+        [{:route, destination, params}] ->
+          {:ok, destination_with_params(destination, params)}
 
-      [] ->
-        {:error, :no_match}
+        [] ->
+          {:error, :no_match}
 
-      matches ->
-        matches =
-          Enum.map(matches, fn {_, destination, params} ->
-            destination_with_params(destination, params)
-          end)
+        matches ->
+          matches =
+            Enum.map(matches, fn {_, destination, params} ->
+              destination_with_params(destination, params)
+            end)
 
-        {:error, {:multiple_matches, matches}}
+          {:error, {:multiple_matches, matches}}
+      end
+    else
+      {:error, :no_match}
     end
   end
 
@@ -91,6 +78,45 @@ defmodule Stopsel.Router do
     else
       []
     end
+  end
+
+  def handle_call({:load_module, module}, _, state) do
+    if router_exists?(module) do
+      :router.delete(module)
+    end
+
+    :router.new(module)
+
+    {:reply, Enum.each(module.__commands__(), &add_route(module, &1)), state}
+  end
+
+  def handle_call({:unload_module, module}, _, state) do
+    {:reply, router_exists?(module) && :router.delete(module), state}
+  end
+
+  def handle_call({:load_route, module, path}, _, state) do
+    result =
+      with true <- router_exists?(module),
+           route when not is_nil(route) <- find_route(module, path) do
+        add_route(module, route)
+      else
+        _ -> :error
+      end
+
+    {:reply, result, state}
+  end
+
+  def handle_call({:unload_route, module, path}, _, state) do
+    result =
+      with true <- router_exists?(module),
+           route when not is_nil(route) <- find_route(module, path) do
+        remove_route(module, route)
+        :ok
+      else
+        _ -> :error
+      end
+
+    {:reply, result, state}
   end
 
   defp find_route(module, path) do

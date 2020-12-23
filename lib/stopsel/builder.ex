@@ -52,7 +52,7 @@ defmodule Stopsel.Builder do
   end
 
   @spec scope(name(), path(), assigns()) :: Macro.t()
-  defmacro command(name, path \\ nil, assigns \\ []) do
+  defmacro command(name, assigns \\ [], path \\ nil) do
     quote location: :keep do
       unquote(in_router!({:command, 2}))
 

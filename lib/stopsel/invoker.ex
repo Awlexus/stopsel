@@ -1,10 +1,12 @@
 defmodule Stopsel.Invoker do
   alias Stopsel.{Message, Router}
 
-  def invoke(message, router) do
+  def invoke(message, router, prefix \\ "") do
     message = Message.Protocol.to_message(message)
 
-    with {:ok, {stopsel, function, assigns, params}} <- Router.match_route(router, parse_path(message)) do
+    with true <- String.starts_with?(message.message, prefix),
+         {:ok, {stopsel, function, assigns, params}} <-
+           Router.match_route(router, parse_path(message, prefix)) do
       message
       |> Message.assign(assigns)
       |> Message.put_params(params)
@@ -13,8 +15,10 @@ defmodule Stopsel.Invoker do
     end
   end
 
-  defp parse_path(%Message{message: message}) do
+  defp parse_path(%Message{message: message}, prefix) do
     message
+    |> String.trim_leading(prefix)
+    |> String.trim_leading()
     |> String.split(~r/["']/, trim: true)
     |> Enum.with_index()
     |> Enum.flat_map(fn

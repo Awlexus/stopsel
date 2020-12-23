@@ -1,13 +1,11 @@
 defmodule Stopsel.Message do
-  defstruct assigns: %{}, params: %{}, halted?: false, message: nil, status: nil
+  defstruct assigns: %{}, params: %{}, halted?: false, message: nil
 
-  @type status :: :no_route | :handled | :halted
   @type t :: %__MODULE__{
           assigns: map(),
           params: map(),
           halted?: boolean(),
-          message: String.t(),
-          status: status()
+          message: String.t()
         }
 
   def assign(%__MODULE__{assigns: assigns} = message, key, value) do

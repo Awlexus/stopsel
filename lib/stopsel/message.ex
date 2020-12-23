@@ -31,16 +31,6 @@ defmodule Stopsel.Message do
   def put_params(%__MODULE__{params: old_params} = message, new_params) do
     %{message | params: Map.merge(old_params, new_params)}
   end
-
-  @doc false
-  def capture_rest(message, drop_words) do
-    rest =
-      message.message
-      |> String.split(~r/\s+/, trim: true, parts: drop_words + 1)
-      |> List.last()
-
-    %{message | rest: rest}
-  end
 end
 
 defprotocol Stopsel.Message.Protocol do

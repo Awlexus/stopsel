@@ -1,6 +1,8 @@
 defmodule Stopsel.Invoker do
   alias Stopsel.{Message, Router}
 
+  require Logger
+
   def invoke(message, router, prefix \\ "") do
     message = Message.Protocol.to_message(message)
 
@@ -29,18 +31,34 @@ defmodule Stopsel.Invoker do
 
   defp apply_stopsel(message, stopsel) do
     Enum.reduce_while(stopsel, message, fn
-      _, %Message{halted?: true} = message ->
-        {:halt, message}
-
       {function, config}, message when is_function(function) ->
-        {:cont, function.(message, config)}
+        message = function.(message, config)
+
+        if message.halted? do
+          Logger.debug("Halted message in #{inspect(function)}")
+          {:halt, message}
+        else
+          {:cont, message}
+        end
 
       {module, opts}, message when is_atom(module) ->
         config = module.init(opts)
-        {:cont, module.call(message, config)}
+        message = module.call(message, config)
+
+        if message.halted? do
+          Logger.debug("Halted message in #{module}")
+          {:halt, message}
+        else
+          {:cont, message}
+        end
     end)
   end
 
   defp do_invoke(%Message{halted?: true}, _), do: :halted
-  defp do_invoke(%Message{} = message, function), do: function.(message, message.params)
+
+  defp do_invoke(%Message{} = message, function) do
+    result = function.(message, message.params)
+    Logger.debug("Message handled returned #{inspect(result)}")
+    result
+  end
 end

@@ -42,9 +42,9 @@ defmodule Stopsel.Invoker do
   end
 
   defp check_prefix(message, prefix) do
-    if String.starts_with?(message.message, prefix) do
+    if String.starts_with?(message.content, prefix) do
       new_message =
-        Map.update!(message, :message, fn message ->
+        Map.update!(message, :content, fn message ->
           message
           |> String.trim_leading(prefix)
           |> String.trim_leading()

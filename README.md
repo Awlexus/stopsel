@@ -163,3 +163,14 @@ iex> Stopsel.Invoker.invoke("!hello", MyApp.Router, "!")
 iex> Stopsel.Invoker.invoke("hello", MyApp.Router, "!")
 {:error, :wrong_prefix}
 ```
+
+### Roadmap
+* [ ] Add attributes to scopes and commands such as help descriptions
+* [ ] Do not use captured functions internally for routes
+* [ ] Turn routes into structs
+* [ ] Make it possible to use locally defined functions for stopsel
+* [ ] Make it possible to use functions from aliased modules for stopsel
+* [ ] Find a way to avoid warnings from imported functions that are used as stopsel
+* [ ] Remove dependency `:router`
+* [ ] Improve invoker message parsing
+* [ ] Improve documentation (ongoing effort)

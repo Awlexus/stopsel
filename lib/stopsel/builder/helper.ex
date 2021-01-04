@@ -26,6 +26,7 @@ defmodule Stopsel.Builder.Helper do
     {parse_path(scope.path, path), scope.stopsel, captured, assigns}
   end
 
+  defp parse_path(prefix, nil), do: prefix
   defp parse_path(prefix, path), do: prefix ++ String.split(path, "|", trim: true)
 
   defp compile_stopsel(env, stopsel) do

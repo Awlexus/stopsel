@@ -4,7 +4,7 @@ defmodule Stopsel.Builder do
   @type do_block :: [do: term()]
   @type stopsel :: module() | atom()
   @type options :: any()
-  @type path :: String.t()
+  @type path :: String.t() | nil
   @type assigns :: map()
   @type name :: atom()
 
@@ -41,7 +41,7 @@ defmodule Stopsel.Builder do
   end
 
   @spec scope(path(), module() | nil, do_block()) :: Macro.t()
-  defmacro scope(path \\ "", module \\ nil, do: block) do
+  defmacro scope(path \\ nil, module \\ nil, do: block) do
     quote location: :keep do
       unquote(in_router!({:scope, 3}))
 

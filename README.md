@@ -114,7 +114,7 @@ The `Stopsel.Router` module allows you to disable routes or the whole router at 
 
 ```elixir
 # First we need to load the router
-iex> Stopsel.Router.load_module(MyApp.Router)
+iex> Stopsel.Router.load_router(MyApp.Router)
 :ok
 
 # Then we can disable routes from the router
@@ -126,7 +126,7 @@ iex> Stopsel.Router.load_route(MyApp.Router, ~w"hello")
 :ok
 
 # and unload our router
-iex> Stopsel.Router.unload_module(MyApp.Router)
+iex> Stopsel.Router.unload_router(MyApp.Router)
 :ok
 ```
 
@@ -136,7 +136,7 @@ After all this, let's route out messages!
 The module `Stopsel.Invoker` allows us to route our messages through our defined routers. Our Router must be loaded with the `Stopsel.Router` for the this to work.
 
 ```elixir
-iex> Stopsel.Router.load_module(MyApp.Router)
+iex> Stopsel.Router.load_router(MyApp.Router)
 :ok
 
 # A message can either be a %Stopsel.Message{} or

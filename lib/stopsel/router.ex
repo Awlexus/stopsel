@@ -18,14 +18,14 @@ defmodule Stopsel.Router do
   Load all commands from the given module into the router.
   Can also be used to reset the router for the given module.
   """
-  @spec load_module(module()) :: :ok
-  def load_module(module), do: GenServer.call(__MODULE__, {:load_module, module})
+  @spec load_router(module()) :: :ok
+  def load_router(module), do: GenServer.call(__MODULE__, {:load_router, module})
 
   @doc """
   Remove the given module from the router
   """
-  @spec unload_module(module()) :: boolean()
-  def unload_module(module), do: GenServer.call(__MODULE__, {:unload_module, module})
+  @spec unload_router(module()) :: boolean()
+  def unload_router(module), do: GenServer.call(__MODULE__, {:unload_router, module})
 
   @doc """
   Load one route that was previously removed back into the router
@@ -80,7 +80,7 @@ defmodule Stopsel.Router do
     end
   end
 
-  def handle_call({:load_module, module}, _, state) do
+  def handle_call({:load_router, module}, _, state) do
     if router_exists?(module) do
       :router.delete(module)
     end
@@ -90,7 +90,7 @@ defmodule Stopsel.Router do
     {:reply, Enum.each(module.__commands__(), &add_route(module, &1)), state}
   end
 
-  def handle_call({:unload_module, module}, _, state) do
+  def handle_call({:unload_router, module}, _, state) do
     {:reply, router_exists?(module) && :router.delete(module), state}
   end
 

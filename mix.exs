@@ -9,6 +9,9 @@ defmodule Stopsel.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
+      package: package(),
+      description: description(),
+      source_url: "https://github.com/Awlexus/stopsel",
       docs: [
         main: "Stopsel",
         extras: ["README.md"]
@@ -34,4 +37,15 @@ defmodule Stopsel.MixProject do
 
   defp elixirc_paths(:test), do: ~w"lib test/support"
   defp elixirc_paths(_), do: ~w"lib"
+
+  defp description() do
+    "A platform independent text message router"
+  end
+
+  defp package() do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/Awlexus/stopsel"}
+    ]
+  end
 end

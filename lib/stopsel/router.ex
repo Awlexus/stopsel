@@ -1,9 +1,33 @@
 defmodule Stopsel.Router do
+  @moduledoc """
+  This module is responsible for managing the active routes of a router.
+
+  A router must first be loaded, before it can be used.
+
+  ```elixir
+  iex> Stopsel.Router.load_router(MyApp.Router)
+  :ok
+  ```
+
+  After that we can use unload routes, enable them again or even unload
+  the whole router.
+
+  ```elixir
+  iex> Stopsel.Router.unload_route(MyApp.Router, ~w"hello")
+  :ok
+  iex> Stopsel.Router.load_route(MyApp.Router, ~w"hello")
+  :ok
+  iex> Stopsel.Router.unload_router(MyApp.Router)
+  :ok
+  ```
+  """
+
   @type path :: [String.t()]
   @type stopsel :: module() | function()
   @type opts :: any()
   @type params :: map()
   @type assigns :: map()
+  @type router :: module()
 
   @type match :: {[{stopsel(), opts}], function(), assigns(), params()}
   @type match_error :: :no_match | {:multiple_matches, [match()]}
@@ -18,34 +42,34 @@ defmodule Stopsel.Router do
   Load all commands from the given module into the router.
   Can also be used to reset the router for the given module.
   """
-  @spec load_router(module()) :: :ok
-  def load_router(module), do: GenServer.call(__MODULE__, {:load_router, module})
+  @spec load_router(router()) :: :ok
+  def load_router(router), do: GenServer.call(__MODULE__, {:load_router, router})
 
   @doc """
   Remove the given module from the router
   """
-  @spec unload_router(module()) :: boolean()
-  def unload_router(module), do: GenServer.call(__MODULE__, {:unload_router, module})
+  @spec unload_router(router()) :: boolean()
+  def unload_router(router), do: GenServer.call(__MODULE__, {:unload_router, router})
 
   @doc """
   Load one route that was previously removed back into the router
   """
-  @spec load_route(module(), path()) :: :error | :ok
-  def load_route(module, path), do: GenServer.call(__MODULE__, {:load_route, module, path})
+  @spec load_route(router(), path()) :: :error | :ok
+  def load_route(router, path), do: GenServer.call(__MODULE__, {:load_route, router, path})
 
   @doc """
   Unload one route from the router
   """
-  @spec unload_route(module(), path()) :: :error | :ok
-  def unload_route(module, path), do: GenServer.call(__MODULE__, {:unload_route, module, path})
+  @spec unload_route(router(), path()) :: :error | :ok
+  def unload_route(router, path), do: GenServer.call(__MODULE__, {:unload_route, router, path})
 
   @doc """
-  Try to find a matching route in the given router
+  Try to find a matching route in the given router.
   """
-  @spec match_route(module(), path()) :: {:ok, match()} | {:error, match_error()}
-  def match_route(module, path) do
-    if router_exists?(module) do
-      case :router.route(module, compile_path(path)) do
+  @spec match_route(router(), path()) :: {:ok, match()} | {:error, match_error()}
+  def match_route(router, path) do
+    if router_exists?(router) do
+      case :router.route(router, compile_path(path)) do
         [{:route, destination, params}] ->
           {:ok, destination_with_params(destination, params)}
 
@@ -65,6 +89,10 @@ defmodule Stopsel.Router do
     end
   end
 
+  @doc """
+  Returns a list of all the currently active routes of the router.
+  """
+  @spec routes(router()) :: [[String.t()]]
   def routes(module) do
     if router_exists?(module) do
       module

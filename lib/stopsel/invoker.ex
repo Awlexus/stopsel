@@ -1,16 +1,49 @@
 defmodule Stopsel.Invoker do
+  @moduledoc """
+  Helper module that routes a message through the specified router.
+
+  This module relies on `Stopsel.Router` for matching the routes,
+  which ensures that only active routes will be tried to match against.
+  """
   alias Stopsel.{Message, Router}
 
   require Logger
 
+  @type reason :: Router.match_error() | {:halted, Message.t()}
+  @type prefix_error :: :wrong_prefix
+
+  @doc """
+  Tries to match a message against the loaded routes of the specified router.
+  The message can either be a `Stopsel.Message` struct or any data structure
+  that implements `Stopsel.Message.Protocol`.
+
+  ### Return values
+  This function will return either `{:ok, value}` or `{:error, reason}`
+
+  The `value` in `{:ok, value}` is the result of the executed command.
+
+  The `reason` in `{:error, reason}` can be one of the following values
+  * `:no_match` - No matching route was found for the message
+  * {:multiple_matches, matches} - Multiple matching routes where found for
+    the message. This should be avoided.
+  * {:halted, message} - The message was halted in the pipeline.
+  """
+  @spec invoke(Message.t() | term(), Router.router()) ::
+          {:ok, term} | {:error, reason()}
   def invoke(%Message{} = message, router) do
     with {:ok, {stopsel, function, assigns, params}} <-
            Router.match_route(router, parse_path(message)) do
-      message
-      |> Message.assign(assigns)
-      |> Message.put_params(params)
-      |> apply_stopsel(stopsel)
-      |> do_invoke(function)
+      new_message =
+        message
+        |> Message.assign(assigns)
+        |> Message.put_params(params)
+        |> apply_stopsel(stopsel)
+
+      if new_message.halted? do
+        {:error, {:halted, new_message}}
+      else
+        {:ok, do_invoke(new_message, function)}
+      end
     end
   end
 
@@ -23,6 +56,12 @@ defmodule Stopsel.Invoker do
     invoke(message, router)
   end
 
+  @doc """
+  Same as `invoke/2` but also checks that the message starts with the
+  specified prefix. Returns `{:error, :wrong_prefix}` otherwise.
+  """
+  @spec invoke(Message.t() | term(), Router.router(), String.t()) ::
+          {:ok, term} | {:error, reason() | prefix_error()}
   def invoke(message, router, ""), do: invoke(message, router)
   def invoke(message, router, nil), do: invoke(message, router)
 
@@ -91,7 +130,7 @@ defmodule Stopsel.Invoker do
     end)
   end
 
-  defp do_invoke(%Message{halted?: true}, _), do: :halted
+  defp do_invoke(%Message{halted?: true} = message, _), do: message
 
   defp do_invoke(%Message{} = message, function) do
     result = function.(message, message.params)

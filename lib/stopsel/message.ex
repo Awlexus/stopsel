@@ -1,6 +1,6 @@
 defmodule Stopsel.Message do
   @moduledoc """
-  A message contains information about a text message.
+  Represents a text message.
 
   A message has the original content, against which was matched against,
   assigns and parameters.
@@ -15,7 +15,12 @@ defmodule Stopsel.Message do
   @type params :: map
   @type content :: String.t()
 
-  @type halted_message :: %__MODULE__{halted?: true}
+  @type halted_message :: %__MODULE__{
+          assigns: assigns(),
+          params: params(),
+          content: content(),
+          halted?: true
+        }
 
   @type t :: %__MODULE__{
           assigns: assigns(),
@@ -41,7 +46,7 @@ defmodule Stopsel.Message do
   end
 
   @doc """
-  Halts a message and prevents it from advancing further down the pipeline.
+  Prevents a message from advancing further down the pipeline.
   """
   @spec halt(t()) :: halted_message()
   def halt(%__MODULE__{} = message) do

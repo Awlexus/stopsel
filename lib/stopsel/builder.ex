@@ -3,26 +3,26 @@ defmodule Stopsel.Builder do
   DSL to build a Stopsel router.
 
   A router is declared using the `router/2` macro.
-  Within this macro you can declare commands, scopes and stopsel.
+  Within this macro you can declare commands, scopes and `Stopsel`.
 
   The commands defined in the router will be used to route the messages
-  to the appropriate functions defined in other module, parallely to the
+  to the appropriate functions defined in other modules, parallely to the
   router module.
 
   Note: You can only define one router per module and you cannot use
   builder functions outside of the router definition.
 
   ## Scopes
-  A scope encapsulates commands, stopsel from the parent scope, with the
-  router-declaration as the root scope.
+  A scope encapsulates commands, stopsel from the parent scope.
+  The router-declaration acts as the root scope.
 
-  ### Alias
-  Every scope can add an alias to the scopes and messages within it.
+  ### Aliasing
+  Every scope can add an alias to the scopes and commands within it.
   An alias is a module which implements a command that has been declared
   in the router.
 
-  In the following example the router applies the initial alias "MyApp" and
-  the scope adds the alias Commands, resulting in the alias "MyApp.Commands"
+  In the following example the router applies the initial alias `MyApp` and
+  the scope adds the alias Commands, resulting in the alias `MyApp.Commands`
   for all commands defined within the scope.
 
   ```elixir
@@ -34,30 +34,30 @@ defmodule Stopsel.Builder do
   ```
 
   ### Paths
-  A path is a string with segments that are separated with "|".
-  There are 2 types of segments: Static segments and parameters
+  A path is a string with segments that are separated with `|`.
+  There are 2 types of segments: Static segments and parameters.
 
   #### Static segments
-  Text against which the content of a is matched against.
+  Text against which the content of a `Stopsel.Message` is matched against.
 
   #### Parameter
-  A parameter segment is defined by prepending ":" in front of the segment name.
+  A parameter segment is defined by prepending `:` in front of the segment name.
   These parameters will be available in the `:params` of the `Stopsel.Message`.
 
   ### Commands
-  A commands with a name and optionally with path and assigns.
-  The name of a command must be the the name of a function defined in the
+  A commands is defined with a name and optionally with path and assigns.
+  The name of a command must be the name of a function defined in the
   current alias.
 
   In this example the command `:execute` would be used to execute the function
   `MyApp.Commands.execute/2`
 
   ```elixir
-    router MyApp do
-      scope "command", Commands do
-        command :execute
-      end
+  router MyApp do
+    scope "command", Commands do
+      command :execute
     end
+  end
   ```
 
   Similar to scopes you can define a path segment against which the message must
@@ -69,9 +69,9 @@ defmodule Stopsel.Builder do
 
   ### Stopsel
   A stopsel can be defined as a function or a module.
-  A message will pass through each of the stopsel that apply to then current
-  scope. Each scope can edit the message or halt the message from being
-  passed to the command function.
+  A message will pass through each of the stopsel that applies to the current
+  scope. Each stopsel can edit the message or halt the message from being
+  passed down to the command function.
 
   For more information on stopsel see `Stopsel`
   """
@@ -87,9 +87,9 @@ defmodule Stopsel.Builder do
   @type alias :: module()
 
   @doc """
-  Starts the router definition. Optionally a module can be
-  provided to scope all command definitions.
+  Starts the router definition.
 
+  Optionally a module can be provided to scope all command definitions.
   Note that only one router can be defined per module.
   """
   @spec router(alias() | nil, do_block()) :: Macro.t()
@@ -133,6 +133,7 @@ defmodule Stopsel.Builder do
 
   @doc """
   Scopes the stopsel and commands defined within the scope.
+
   See the section "Paths" for more details on how paths are declared.
 
   Cannot be declared outside of the router.
@@ -150,6 +151,7 @@ defmodule Stopsel.Builder do
 
   @doc """
   Adds a command to the router.
+
   See the section "Paths" for more details on how paths are declared.
 
   Additionally to the path you can also specify assigns that will be

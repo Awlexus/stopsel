@@ -35,36 +35,40 @@ defmodule Stopsel.Router do
   @doc false
   use GenServer
 
+  @doc false
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+
+  @doc false
   def init(_), do: {:ok, nil}
 
   @doc """
-  Load all commands from the given module into the router.
-  Can also be used to reset the router for the given module.
+  Loads all commands from the given module into the router.
+
+  Reloads all routes of the router, if they have been unloaded.
   """
-  @spec load_router(router()) :: :ok
+  @spec load_router(router()) :: true
   def load_router(router), do: GenServer.call(__MODULE__, {:load_router, router})
 
   @doc """
-  Remove the given module from the router
+  Removes the given module from the router.
   """
   @spec unload_router(router()) :: boolean()
   def unload_router(router), do: GenServer.call(__MODULE__, {:unload_router, router})
 
   @doc """
-  Load one route that was previously removed back into the router
+  Loads one route that was previously removed back into the router.
   """
-  @spec load_route(router(), path()) :: :error | :ok
+  @spec load_route(router(), path()) :: boolean()
   def load_route(router, path), do: GenServer.call(__MODULE__, {:load_route, router, path})
 
   @doc """
-  Unload one route from the router
+  Unloads one route from the router.
   """
-  @spec unload_route(router(), path()) :: :error | :ok
+  @spec unload_route(router(), path()) :: boolean()
   def unload_route(router, path), do: GenServer.call(__MODULE__, {:unload_route, router, path})
 
   @doc """
-  Try to find a matching route in the given router.
+  Tries to find a matching route in the given router.
   """
   @spec match_route(router(), path()) :: {:ok, match()} | {:error, match_error()}
   def match_route(router, path) do
@@ -93,9 +97,9 @@ defmodule Stopsel.Router do
   Returns a list of all the currently active routes of the router.
   """
   @spec routes(router()) :: [[String.t()]]
-  def routes(module) do
-    if router_exists?(module) do
-      module
+  def routes(router) do
+    if router_exists?(router) do
+      router
       |> :router.paths()
       |> Enum.map(fn path ->
         Enum.map(path, fn
@@ -114,8 +118,9 @@ defmodule Stopsel.Router do
     end
 
     :router.new(module)
+    Enum.each(module.__commands__(), &add_route(module, &1))
 
-    {:reply, Enum.each(module.__commands__(), &add_route(module, &1)), state}
+    {:reply, true, state}
   end
 
   def handle_call({:unload_router, module}, _, state) do
@@ -127,8 +132,9 @@ defmodule Stopsel.Router do
       with true <- router_exists?(module),
            route when not is_nil(route) <- find_route(module, path) do
         add_route(module, route)
+        true
       else
-        _ -> :error
+        _ -> false
       end
 
     {:reply, result, state}
@@ -139,9 +145,9 @@ defmodule Stopsel.Router do
       with true <- router_exists?(module),
            route when not is_nil(route) <- find_route(module, path) do
         remove_route(module, route)
-        :ok
+        true
       else
-        _ -> :error
+        _ -> false
       end
 
     {:reply, result, state}

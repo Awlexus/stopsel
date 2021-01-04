@@ -1,6 +1,6 @@
 defmodule Stopsel.Invoker do
   @moduledoc """
-  Helper module that routes a message through the specified router.
+  Routes a message through a router.
 
   This module relies on `Stopsel.Router` for matching the routes,
   which ensures that only active routes will be tried to match against.
@@ -24,25 +24,28 @@ defmodule Stopsel.Invoker do
 
   The `reason` in `{:error, reason}` can be one of the following values
   * `:no_match` - No matching route was found for the message
-  * {:multiple_matches, matches} - Multiple matching routes where found for
+  * `{:multiple_matches, matches}` - Multiple matching routes where found for
     the message. This should be avoided.
-  * {:halted, message} - The message was halted in the pipeline.
+  * `{:halted, message}` - The message was halted in the pipeline.
   """
   @spec invoke(Message.t() | term(), Router.router()) ::
           {:ok, term} | {:error, reason()}
   def invoke(%Message{} = message, router) do
     with {:ok, {stopsel, function, assigns, params}} <-
            Router.match_route(router, parse_path(message)) do
-      new_message =
-        message
-        |> Message.assign(assigns)
-        |> Message.put_params(params)
-        |> apply_stopsel(stopsel)
+      message
+      |> Message.assign(assigns)
+      |> Message.put_params(params)
+      |> apply_stopsel(stopsel)
+      |> case do
+        %Message{halted?: true} = message ->
+          {:error, {:halted, message}}
 
-      if new_message.halted? do
-        {:error, {:halted, new_message}}
-      else
-        {:ok, do_invoke(new_message, function)}
+        %Message{} = message ->
+          {:ok, do_invoke(message, function)}
+
+        other ->
+          raise Stopsel.InvalidMessage, other
       end
     end
   end

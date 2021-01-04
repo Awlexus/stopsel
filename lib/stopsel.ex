@@ -1,10 +1,9 @@
 defmodule Stopsel do
   @moduledoc """
-  A stopsel is similar to a "plug".
-  It accepts a message (`Stopsel.Message`), modifies it or
-  prevents it from passing it further down the router.
+  A stopsel accepts a message (`Stopsel.Message`), modifies it or
+  prevents it from being passed further down the pipeline.
 
-  Similar to "plug"s a stopsel can be either a function or a
+  Similar to the library `Plug`, a stopsel can be either a function or a
   module that implements the `Stopsel` behaviour.
 
   ## Module Stopsel
@@ -24,7 +23,7 @@ defmodule Stopsel do
   Use this callback to edit the parameters and assigns of the message
   or halt the message if necessary. Must return a `Stopsel.Message`
 
-  ## function stopsel
+  ## Function stopsel
   A function stopsel will receive a message and a configuration, without
   preprocessing the configuration. Currently a function stopsel must be
   declared as atom that corresponds to an imported function.

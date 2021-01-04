@@ -1,11 +1,11 @@
 defprotocol Stopsel.Message.Protocol do
-  @moduledoc "Protocol to turn a datastructure into a `Stopsel.Message`"
+  @moduledoc "Protocol to turn a data structure into a `Stopsel.Message`."
 
-  @doc "The assigns the message will have"
+  @doc "Returns the assigns for the message."
   @spec assigns(t()) :: Stopsel.Message.assigns()
   def assigns(data)
 
-  @doc "The text content of the datastructure"
+  @doc "Returns the text content for the message."
   @spec content(t()) :: Stopsel.Message.content()
   def content(data)
 end

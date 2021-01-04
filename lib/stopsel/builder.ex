@@ -5,7 +5,7 @@ defmodule Stopsel.Builder do
   @type stopsel :: module() | atom()
   @type options :: any()
   @type path :: String.t() | nil
-  @type assigns :: map()
+  @type assigns :: map() | Keyword.t()
   @type name :: atom()
 
   @spec router(module() | nil, do_block()) :: Macro.t()
@@ -51,7 +51,7 @@ defmodule Stopsel.Builder do
     end
   end
 
-  @spec scope(name(), path(), assigns()) :: Macro.t()
+  @spec command(name(), path(), assigns()) :: Macro.t()
   defmacro command(name, path \\ nil, assigns \\ []) do
     quote location: :keep do
       unquote(in_router!({:command, 2}))

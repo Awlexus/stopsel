@@ -165,12 +165,13 @@ iex> Stopsel.Invoker.invoke("hello", MyApp.Router, "!")
 ```
 
 ### Roadmap
-* [ ] Add attributes to scopes and commands such as help descriptions
+* [ ] Improve documentation (ongoing effort)
+* [ ] Add Tests
+* [ ] Improve invoker message parsing
 * [ ] Do not use captured functions internally for routes
 * [ ] Turn routes into structs
+* [ ] Add attributes to scopes and commands such as help descriptions
 * [ ] Make it possible to use locally defined functions for stopsel
 * [ ] Make it possible to use functions from aliased modules for stopsel
 * [ ] Find a way to avoid warnings from imported functions that are used as stopsel
 * [ ] Remove dependency `:router`
-* [ ] Improve invoker message parsing
-* [ ] Improve documentation (ongoing effort)

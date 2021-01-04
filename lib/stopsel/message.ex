@@ -34,16 +34,3 @@ defmodule Stopsel.Message do
     %{message | params: Map.merge(old_params, new_params)}
   end
 end
-
-defprotocol Stopsel.Message.Protocol do
-  @spec assigns(t()) :: Stopsel.Message.assigns()
-  def assigns(data)
-
-  @spec content(t()) :: Stopsel.Message.content()
-  def content(data)
-end
-
-defimpl Stopsel.Message.Protocol, for: Stopsel.Message do
-  def assigns(message), do: message.assigns
-  def content(message), do: message.content
-end

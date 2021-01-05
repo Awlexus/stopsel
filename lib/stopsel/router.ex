@@ -30,6 +30,11 @@ defmodule Stopsel.Router do
 
   """
 
+  @doc false
+  use GenServer
+
+  alias Stopsel.Builder.Command
+
   @type path :: [String.t()]
   @type stopsel :: module() | function()
   @type opts :: any()
@@ -39,10 +44,6 @@ defmodule Stopsel.Router do
 
   @type match :: {[{stopsel(), opts}], function(), assigns(), params()}
   @type match_error :: :no_match | {:multiple_matches, [match()]}
-
-  @doc false
-  use GenServer
-
   @doc false
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
@@ -116,7 +117,7 @@ defmodule Stopsel.Router do
       iex> Stopsel.Router.load_router(MyApp.Router)
       true
       iex> Stopsel.Router.match_route(MyApp.Router, ~w"hello")
-      {:ok, {[], &MyApp.hello/2, %{}, %{}}}
+      {:ok, %Stopsel.Builder.Command{path: ~w"hello", function: :hello, module: MyApp}}
       iex> Stopsel.Router.match_route(MyApp.Router, ~w"hellooo")
       {:error, :no_match}
 
@@ -125,17 +126,14 @@ defmodule Stopsel.Router do
   def match_route(router, path) do
     if router_exists?(router) do
       case :router.route(router, compile_path(path)) do
-        [{:route, destination, params}] ->
-          {:ok, destination_with_params(destination, params)}
+        [{:route, %Command{} = command, params}] ->
+          {:ok, %{command | params: Map.new(params)}}
 
         [] ->
           {:error, :no_match}
 
         matches ->
-          matches =
-            Enum.map(matches, fn {_, destination, params} ->
-              destination_with_params(destination, params)
-            end)
+          matches = Enum.map(matches, &elem(&1, 2))
 
           {:error, {:multiple_matches, matches}}
       end
@@ -210,15 +208,15 @@ defmodule Stopsel.Router do
   end
 
   defp find_route(module, path) do
-    Enum.find(module.__commands__(), &(elem(&1, 0) == path))
+    Enum.find(module.__commands__(), &(&1.path == path))
   end
 
-  defp add_route(module, {path, stopsel, function, assigns}) do
-    :router.add(module, compile_path(path), {stopsel, function, Map.new(assigns)})
+  defp add_route(module, %Command{} = command) do
+    :router.add(module, compile_path(command.path), command)
   end
 
-  defp remove_route(module, {path, stopsel, function, assigns}) do
-    :router.remove_path(module, compile_path(path), {stopsel, function, Map.new(assigns)})
+  defp remove_route(module, %Command{} = command) do
+    :router.remove_path(module, compile_path(command.path), command)
   end
 
   defp compile_path(path) do
@@ -226,10 +224,6 @@ defmodule Stopsel.Router do
       ":" <> param -> {:+, String.to_atom(param)}
       segment -> segment
     end)
-  end
-
-  defp destination_with_params({stopsel, function, assigns}, params) do
-    {stopsel, function, assigns, Map.new(params)}
   end
 
   defp router_exists?(module) do

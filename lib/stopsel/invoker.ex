@@ -6,6 +6,7 @@ defmodule Stopsel.Invoker do
   which ensures that only active routes will be tried to match against.
   """
   alias Stopsel.{Message, Router}
+  alias Stopsel.Builder.Command
 
   require Logger
 
@@ -50,18 +51,18 @@ defmodule Stopsel.Invoker do
   @spec invoke(Message.t() | term(), Router.router()) ::
           {:ok, term} | {:error, reason()}
   def invoke(%Message{} = message, router) do
-    with {:ok, {stopsel, function, assigns, params}} <-
+    with {:ok, %Command{} = command} <-
            Router.match_route(router, parse_path(message)) do
       message
-      |> Message.assign(assigns)
-      |> Message.put_params(params)
-      |> apply_stopsel(stopsel)
+      |> Message.assign(command.assigns)
+      |> Message.put_params(command.params)
+      |> apply_stopsel(command.stopsel)
       |> case do
         %Message{halted?: true} = message ->
           {:error, {:halted, message}}
 
         %Message{} = message ->
-          {:ok, do_invoke(message, function)}
+          {:ok, do_invoke(message, command.module, command.function)}
 
         other ->
           raise Stopsel.InvalidMessage, other
@@ -169,8 +170,8 @@ defmodule Stopsel.Invoker do
 
   defp do_invoke(%Message{halted?: true} = message, _), do: message
 
-  defp do_invoke(%Message{} = message, function) do
-    result = function.(message, message.params)
+  defp do_invoke(%Message{} = message, module, function) do
+    result = apply(module, function, [message, message.params])
     Logger.debug("Message handled returned #{inspect(result)}")
     result
   end

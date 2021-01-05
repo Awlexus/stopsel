@@ -1,5 +1,6 @@
 defmodule Stopsel.BuilderTest do
   use ExUnit.Case
+  alias Stopsel.Builder.Command
 
   describe "router/2" do
     test "allows only one router per module" do
@@ -36,8 +37,7 @@ defmodule Stopsel.BuilderTest do
         end
       end
 
-      function = &MyApp.hello/2
-      [{["hello"], [], ^function, []}] = Test.__commands__()
+      assert [%Command{path: ~w"hello", function: :hello, module: MyApp}] == Test.__commands__()
     end
   end
 
@@ -64,8 +64,7 @@ defmodule Stopsel.BuilderTest do
         end
       end
 
-      function = &MyApp.hello/2
-      [{["hello"], [], ^function, []}] = Test.__commands__()
+      assert [%Command{path: ~w"hello", function: :hello, module: MyApp}] == Test.__commands__()
     end
 
     test "adds to path" do
@@ -79,7 +78,8 @@ defmodule Stopsel.BuilderTest do
         end
       end
 
-      [{~w"scope hello", [], _, []}] = Test.__commands__()
+      assert [%Command{path: ~w"scope hello", function: :hello, module: MyApp}] ==
+               Test.__commands__()
     end
 
     test "scopes stopsel" do
@@ -96,7 +96,8 @@ defmodule Stopsel.BuilderTest do
         end
       end
 
-      [{~w"hello", [], _, []}] = Test.__commands__()
+      assert [%Command{path: ~w"hello", function: :hello, module: MyApp}] ==
+               Test.__commands__()
     end
   end
 
@@ -132,7 +133,7 @@ defmodule Stopsel.BuilderTest do
         end
       end
 
-      [{~w"hihi", [], _, []}] = Test.__commands__()
+      assert [%Command{path: ~w"hihi", function: :hello, module: MyApp}] == Test.__commands__()
     end
 
     test "adds name as path if none was given" do
@@ -144,7 +145,7 @@ defmodule Stopsel.BuilderTest do
         end
       end
 
-      [{~w"hello", [], _, []}] = Test.__commands__()
+      assert [%Command{path: ~w"hello", function: :hello, module: MyApp}] == Test.__commands__()
     end
   end
 
@@ -170,7 +171,14 @@ defmodule Stopsel.BuilderTest do
         end
       end
 
-      [{_, [{MyApp.PseudoStopsel, _}], _, _}] = Test.__commands__()
+      command = %Command{
+        path: ~w"hello",
+        function: :hello,
+        module: MyApp,
+        stopsel: [{MyApp.PseudoStopsel, []}]
+      }
+
+      assert [command] == Test.__commands__()
     end
 
     test "supports module stopsel" do

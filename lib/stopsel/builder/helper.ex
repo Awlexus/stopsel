@@ -1,6 +1,6 @@
 defmodule Stopsel.Builder.Helper do
   @moduledoc false
-  alias Stopsel.Builder.Scope
+  alias Stopsel.Builder.{Command, Scope}
 
   def put_stopsel([scope | rest], stopsel, opts, env) do
     compiled = compile_stopsel(env, stopsel)
@@ -19,11 +19,20 @@ defmodule Stopsel.Builder.Helper do
 
   def pop_scope([_ | rest]), do: rest
 
-  def command([scope | _], name, path, assigns) do
+  def command(scopes, name, nil, assigns) do
+    command(scopes, name, to_string(name), assigns)
+  end
+
+  def command([%Scope{} = scope | _], name, path, assigns) do
     ensure_command_compiled!(scope.module, name, 2)
 
-    captured = to_captured_function(scope.module, name, 2)
-    {parse_path(scope.path, path), scope.stopsel, captured, assigns}
+    %Command{
+      path: parse_path(scope.path, path),
+      stopsel: scope.stopsel,
+      module: scope.module,
+      function: name,
+      assigns: Map.new(assigns)
+    }
   end
 
   defp parse_path(prefix, nil), do: prefix
@@ -50,22 +59,9 @@ defmodule Stopsel.Builder.Helper do
     modules = for {module, functions} <- env.functions, {^stopsel, 2} <- functions, do: module
 
     case modules do
-      [module] ->
-        to_captured_function(module, stopsel, 2)
-
-      _ ->
-        :error
+      [module] -> {module, stopsel}
+      _ -> :error
     end
-  end
-
-  defp to_captured_function(module, function, arity) do
-    ast =
-      quote do
-        &(unquote(module).unquote(function) / unquote(arity))
-      end
-
-    {captured, _} = Code.eval_quoted(ast, module: module, function: function, arity: arity)
-    captured
   end
 
   defp ensure_command_compiled!(module, name, arity) do

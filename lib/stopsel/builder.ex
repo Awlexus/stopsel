@@ -170,7 +170,7 @@ defmodule Stopsel.Builder do
       @commands Helper.command(
                   @scope,
                   unquote(name),
-                  unquote(path || to_string(name)),
+                  unquote(path),
                   unquote(assigns)
                 )
     end

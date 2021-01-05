@@ -37,7 +37,7 @@ defmodule Stopsel.InvalidMessage do
   defexception [:message]
 
   def exception(other) do
-    message = "A %Stopsel.Message{} was expected, got #{inspect other}"
+    message = "A %Stopsel.Message{} was expected, got #{inspect(other)}"
 
     %__MODULE__{message: message}
   end

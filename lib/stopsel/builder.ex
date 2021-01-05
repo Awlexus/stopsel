@@ -34,7 +34,7 @@ defmodule Stopsel.Builder do
   ```
 
   ## Paths
-  A path is a string with segments that are separated with `|`.
+  A path is a string with segments that are separated with a space.
   There are 2 types of segments: Static segments and parameters.
 
   Note: Avoid adding spaces in path segments as they can confuse

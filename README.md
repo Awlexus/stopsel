@@ -38,13 +38,13 @@ defmodule MyApp.Router do
 
     # We can scope commands using a path and alias them further.
     # In this case all following commands will be defined under the path
-    # "calculator|:a" and aliased to the module "MyApp.Calculator".
+    # "calculator :a" and aliased to the module "MyApp.Calculator".
 
-    # Segments of a command path are seperated with "|".
+    # Segments of a command path are seperated with " ".
     # A segment that starts with ":" will not be used as Text to match
     # against, but as a parameter that will we can use later on.
 
-    scope "calculator|:a", Calculator do
+    scope "calculator :a", Calculator do
       # A stopsel is similar to a plug.
 
       # If you are not familiar with the library plug, a "plug" is a module
@@ -58,10 +58,10 @@ defmodule MyApp.Router do
 
       # Here we aliased the commands to not match against "add", "subtract", ...
       # but against "+", "-", ... and have an aditional parameter called "b"
-      command :add, "+|:b"
-      command :subtract, "-|:b"
-      command :multiply, "*|:b"
-      command :divide, "/|:b"
+      command :add, "+ :b"
+      command :subtract, "- :b"
+      command :multiply, "* :b"
+      command :divide, "/ :b"
     end
   end
 end
@@ -85,8 +85,8 @@ As seen above, a function that handles a command must accept 2 arguments
 
 In the example above we have created a route like this.
 ```elixir
-scope "calculator|:a", Calculator do
-  command :add, "+|:b"
+scope "calculator :a", Calculator do
+  command :add, "+ :b"
   ...
 end
 ```

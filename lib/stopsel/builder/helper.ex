@@ -37,7 +37,7 @@ defmodule Stopsel.Builder.Helper do
   end
 
   defp parse_path(prefix, nil), do: prefix
-  defp parse_path(prefix, path), do: prefix ++ String.split(path, "|", trim: true)
+  defp parse_path(prefix, path), do: prefix ++ String.split(path)
 
   defp compile_stopsel(env, stopsel, opts) do
     with :error <- compile_module_stopsel(stopsel, opts),

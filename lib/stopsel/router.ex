@@ -33,17 +33,12 @@ defmodule Stopsel.Router do
   @doc false
   use GenServer
 
-  alias Stopsel.Builder.Command
+  alias Stopsel.Command
 
   @type path :: [String.t()]
-  @type stopsel :: module() | function()
-  @type opts :: any()
-  @type params :: map()
-  @type assigns :: map()
   @type router :: module()
 
-  @type match :: {[{stopsel(), opts}], function(), assigns(), params()}
-  @type match_error :: :no_match | {:multiple_matches, [match()]}
+  @type match_error :: :no_match | {:multiple_matches, [Command.t()]}
   @doc false
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
@@ -117,12 +112,12 @@ defmodule Stopsel.Router do
       iex> Stopsel.Router.load_router(MyApp.Router)
       true
       iex> Stopsel.Router.match_route(MyApp.Router, ~w"hello")
-      {:ok, %Stopsel.Builder.Command{path: ~w"hello", function: :hello, module: MyApp}}
+      {:ok, %Stopsel.Command{path: ~w"hello", function: :hello, module: MyApp}}
       iex> Stopsel.Router.match_route(MyApp.Router, ~w"hellooo")
       {:error, :no_match}
 
   """
-  @spec match_route(router(), path()) :: {:ok, match()} | {:error, match_error()}
+  @spec match_route(router(), path()) :: {:ok, Command.t()} | {:error, match_error()}
   def match_route(router, path) do
     if router_exists?(router) do
       case :router.route(router, compile_path(path)) do

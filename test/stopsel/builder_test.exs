@@ -1,6 +1,6 @@
 defmodule Stopsel.BuilderTest do
   use ExUnit.Case
-  alias Stopsel.Builder.Command
+  alias Stopsel.Command
 
   describe "router/2" do
     test "allows only one router per module" do

@@ -5,8 +5,7 @@ defmodule Stopsel.Invoker do
   This module relies on `Stopsel.Router` for matching the routes,
   which ensures that only active routes will be tried to match against.
   """
-  alias Stopsel.{Message, Router}
-  alias Stopsel.Builder.Command
+  alias Stopsel.{Command, Message, Router}
 
   require Logger
 
@@ -145,30 +144,32 @@ defmodule Stopsel.Invoker do
 
   defp apply_stopsel(message, stopsel) do
     Enum.reduce_while(stopsel, message, fn
-      {function, config}, message when is_function(function) ->
-        message = function.(message, config)
+      {{module, function}, config}, message ->
+        module
+        |> apply(function, [message, config])
+        |> handle_message(function)
 
-        if message.halted? do
-          Logger.debug("Halted message in #{inspect(function)}")
-          {:halt, message}
-        else
-          {:cont, message}
-        end
-
-      {module, opts}, message when is_atom(module) ->
+      {module, opts}, message ->
         config = module.init(opts)
-        message = module.call(message, config)
 
-        if message.halted? do
-          Logger.debug("Halted message in #{module}")
-          {:halt, message}
-        else
-          {:cont, message}
-        end
+        message
+        |> module.call(config)
+        |> handle_message(module)
     end)
   end
 
-  defp do_invoke(%Message{halted?: true} = message, _), do: message
+  defp handle_message(%Message{} = message, cause) do
+    if message.halted? do
+      Logger.debug("Halted message in #{cause}")
+      {:halt, message}
+    else
+      {:cont, message}
+    end
+  end
+
+  defp handle_message(other, _), do: raise(Stopsel.InvalidMessage, other)
+
+  defp do_invoke(%Message{halted?: true} = message, _, _), do: message
 
   defp do_invoke(%Message{} = message, module, function) do
     result = apply(module, function, [message, message.params])

@@ -1,6 +1,7 @@
 defmodule Stopsel.Builder.Helper do
   @moduledoc false
-  alias Stopsel.Builder.{Command, Scope}
+  alias Stopsel.Command
+  alias Stopsel.Builder.Scope
 
   def put_stopsel([scope | rest], stopsel, opts, env) do
     compiled = compile_stopsel(env, stopsel)

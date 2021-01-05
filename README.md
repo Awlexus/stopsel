@@ -114,19 +114,19 @@ The `Stopsel.Router` module allows you to (un)load a router or (un)load routes a
 ```elixir
 # First we load the router
 iex> Stopsel.Router.load_router(MyApp.Router)
-:ok
+true
 
 # Then we can disable routes from the router
 iex> Stopsel.Router.unload_route(MyApp.Router, ~w"hello")
-:ok
+true
 
 # or enable them again
 iex> Stopsel.Router.load_route(MyApp.Router, ~w"hello")
-:ok
+true
 
 # and unload our router
 iex> Stopsel.Router.unload_router(MyApp.Router)
-:ok
+true
 ```
 
 ## Stopsel.Invoker

@@ -8,10 +8,15 @@ defprotocol Stopsel.Message.Protocol do
   @doc "Returns the text content for the message."
   @spec content(t()) :: Stopsel.Message.content()
   def content(data)
+
+  @doc "Returns parameters for the message"
+  @spec params(t()) :: Stopsel.Message.params()
+  def params(data)
 end
 
 defimpl Stopsel.Message.Protocol, for: BitString do
   @moduledoc false
   def assigns(_), do: %{}
   def content(string), do: string
+  def params(_), do: %{}
 end

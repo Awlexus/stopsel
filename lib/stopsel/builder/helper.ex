@@ -4,8 +4,8 @@ defmodule Stopsel.Builder.Helper do
   alias Stopsel.Builder.Scope
 
   def put_stopsel([scope | rest], stopsel, opts, env) do
-    compiled = compile_stopsel(env, stopsel)
-    [%{scope | stopsel: scope.stopsel ++ [{compiled, opts}]} | rest]
+    compiled = compile_stopsel(env, stopsel, opts)
+    [%{scope | stopsel: scope.stopsel ++ [compiled]} | rest]
   end
 
   def push_scope([head | _] = scopes, path, module) do
@@ -39,28 +39,28 @@ defmodule Stopsel.Builder.Helper do
   defp parse_path(prefix, nil), do: prefix
   defp parse_path(prefix, path), do: prefix ++ String.split(path, "|", trim: true)
 
-  defp compile_stopsel(env, stopsel) do
-    with :error <- compile_module_stopsel(stopsel),
-         :error <- compile_function_stopsel(env, stopsel) do
+  defp compile_stopsel(env, stopsel, opts) do
+    with :error <- compile_module_stopsel(stopsel, opts),
+         :error <- compile_function_stopsel(env, stopsel, opts) do
       raise Stopsel.InvalidStopsel, stopsel
     end
   end
 
-  defp compile_module_stopsel(stopsel) do
+  defp compile_module_stopsel(stopsel, opts) do
     with {:module, _} <- Code.ensure_compiled(stopsel),
          true <- function_exported?(stopsel, :init, 1),
          true <- function_exported?(stopsel, :call, 2) do
-      stopsel
+      {stopsel, stopsel.init(opts)}
     else
       _ -> :error
     end
   end
 
-  defp compile_function_stopsel(env, stopsel) do
+  defp compile_function_stopsel(env, stopsel, opts) do
     modules = for {module, functions} <- env.functions, {^stopsel, 2} <- functions, do: module
 
     case modules do
-      [module] -> {module, stopsel}
+      [module] -> {{module, stopsel}, opts}
       _ -> :error
     end
   end

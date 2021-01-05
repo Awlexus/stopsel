@@ -14,10 +14,6 @@ defmodule Stopsel do
   Use this callback to prepare the configuration and if necessary evaluate
   its correctness.
 
-  Currently the configuration is evaluated at runtime. This is subject to
-  change in future versions.
-
-  ### `call/2`
   Accepts a message and the evaluated configuration from `init/1`.
 
   Use this callback to edit the parameters and assigns of the message

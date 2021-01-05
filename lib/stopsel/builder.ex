@@ -16,7 +16,7 @@ defmodule Stopsel.Builder do
   A scope encapsulates commands, stopsel from the parent scope.
   The router-declaration acts as the root scope.
 
-  ### Aliasing
+  ## Aliasing
   Every scope can add an alias to the scopes and commands within it.
   An alias is a module which implements a command that has been declared
   in the router.
@@ -33,21 +33,21 @@ defmodule Stopsel.Builder do
   end
   ```
 
-  ### Paths
+  ## Paths
   A path is a string with segments that are separated with `|`.
   There are 2 types of segments: Static segments and parameters.
 
   Note: Avoid adding spaces in path segments as they can confuse
   the `Stopsel.Invoker` module.
 
-  #### Static segments
+  ### Static segments
   Text against which the content of a `Stopsel.Message` is matched against.
 
-  #### Parameter
+  ### Parameter
   A parameter segment is defined by prepending `:` in front of the segment name.
   These parameters will be available in the `:params` of the `Stopsel.Message`.
 
-  ### Commands
+  ## Commands
   A commands is defined with a name and optionally with path and assigns.
   The name of a command must be the name of a function defined in the
   current alias.
@@ -70,7 +70,7 @@ defmodule Stopsel.Builder do
   Additionally assigns can be added to a command. These will be added to the
   message before any stopsel are applied.
 
-  ### Stopsel
+  ## Stopsel
   A stopsel can be defined as a function or a module.
   A message will pass through each of the stopsel that applies to the current
   scope. Each stopsel can edit the message or halt the message from being

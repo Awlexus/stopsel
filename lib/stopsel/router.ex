@@ -4,22 +4,30 @@ defmodule Stopsel.Router do
 
   A router must first be loaded, before it can be used.
 
-  ```elixir
-  iex> Stopsel.Router.load_router(MyApp.Router)
-  :ok
-  ```
+  Examples below will use the the following router
 
-  After that we can use unload routes, enable them again or even unload
-  the whole router.
+      defmodule MyApp.Router do
+        import Stopsel.Builder
 
-  ```elixir
-  iex> Stopsel.Router.unload_route(MyApp.Router, ~w"hello")
-  :ok
-  iex> Stopsel.Router.load_route(MyApp.Router, ~w"hello")
-  :ok
-  iex> Stopsel.Router.unload_router(MyApp.Router)
-  :ok
-  ```
+        import MyApp.NumberUtils,
+          only: [parse_number: 2],
+          warn: false
+
+        router MyApp do
+          command :hello
+
+          scope "calculator|:a", Calculator do
+            stopsel :parse_number, :a
+            stopsel :parse_number, :b
+
+            command :add, "+|:b"
+            command :subtract, "-|:b"
+            command :multiply, "*|:b"
+            command :divide, "/|:b"
+          end
+        end
+      end
+
   """
 
   @type path :: [String.t()]
@@ -45,30 +53,73 @@ defmodule Stopsel.Router do
   Loads all commands from the given module into the router.
 
   Reloads all routes of the router, if they have been unloaded.
+
+      iex> Stopsel.Router.load_router(MyApp.Router)
+      true
+      iex> Stopsel.Router.routes(MyApp.Router) |> Enum.sort()
+      [
+        ["calculator", ":a", "*", ":b"],
+        ["calculator", ":a", "+", ":b"],
+        ["calculator", ":a", "-", ":b"],
+        ["calculator", ":a", "/", ":b"],
+        ["hello"]
+      ]
+
   """
   @spec load_router(router()) :: true
   def load_router(router), do: GenServer.call(__MODULE__, {:load_router, router})
 
   @doc """
   Removes the given module from the router.
+
+      iex> Stopsel.Router.load_router(MyApp.Router) != []
+      true
+      iex> Stopsel.Router.unload_router(MyApp.Router)
+      true
+      iex> Stopsel.Router.routes(MyApp.Router) == []
+      true
+
   """
   @spec unload_router(router()) :: boolean()
   def unload_router(router), do: GenServer.call(__MODULE__, {:unload_router, router})
 
   @doc """
   Loads one route that was previously removed back into the router.
+
+      iex> Stopsel.Router.unload_router(MyApp.Router)
+      iex> Stopsel.Router.load_route(MyApp.Router, ~w"hello")
+      true
+      iex> Stopsel.Router.routes(MyApp.Router)
+      [["hello"]]
+
   """
   @spec load_route(router(), path()) :: boolean()
   def load_route(router, path), do: GenServer.call(__MODULE__, {:load_route, router, path})
 
   @doc """
   Unloads one route from the router.
+
+      iex> Stopsel.Router.load_router(MyApp.Router)
+      true
+      iex> Stopsel.Router.unload_route(MyApp.Router, ~w"hello")
+      true
+      iex> ~w"hello" in Stopsel.Router.routes(MyApp.Router)
+      false
+
   """
   @spec unload_route(router(), path()) :: boolean()
   def unload_route(router, path), do: GenServer.call(__MODULE__, {:unload_route, router, path})
 
   @doc """
   Tries to find a matching route in the given router.
+
+      iex> Stopsel.Router.load_router(MyApp.Router)
+      true
+      iex> Stopsel.Router.match_route(MyApp.Router, ~w"hello")
+      {:ok, {[], &MyApp.hello/2, %{}, %{}}}
+      iex> Stopsel.Router.match_route(MyApp.Router, ~w"hellooo")
+      {:error, :no_match}
+
   """
   @spec match_route(router(), path()) :: {:ok, match()} | {:error, match_error()}
   def match_route(router, path) do
@@ -128,13 +179,18 @@ defmodule Stopsel.Router do
   end
 
   def handle_call({:load_route, module, path}, _, state) do
+    unless router_exists?(module) do
+      :router.new(module)
+    end
+
     result =
-      with true <- router_exists?(module),
-           route when not is_nil(route) <- find_route(module, path) do
-        add_route(module, route)
-        true
-      else
-        _ -> false
+      case find_route(module, path) do
+        nil ->
+          false
+
+        route ->
+          add_route(module, route)
+          true
       end
 
     {:reply, result, state}
@@ -154,7 +210,7 @@ defmodule Stopsel.Router do
   end
 
   defp find_route(module, path) do
-    Enum.find(module.__commands(), &(elem(&1, 0) == path))
+    Enum.find(module.__commands__(), &(elem(&1, 0) == path))
   end
 
   defp add_route(module, {path, stopsel, function, assigns}) do

@@ -31,6 +31,14 @@ defmodule Stopsel.Message do
 
   @doc """
   Adds an assign to the message or overwrites it.
+
+      iex> Stopsel.Message.assign(%Stopsel.Message{}, :key, :value)
+      %Stopsel.Message{assigns: %{key: :value}}
+
+      iex> assigns = %{key: :old_value}
+      iex> Stopsel.Message.assign(%Stopsel.Message{assigns: assigns}, :key, :new_value)
+      %Stopsel.Message{assigns: %{key: :new_value}}
+
   """
   @spec assign(t(), atom(), term()) :: t()
   def assign(%__MODULE__{assigns: assigns} = message, key, value) do
@@ -39,6 +47,14 @@ defmodule Stopsel.Message do
 
   @doc """
   Adds many assigns or overwrites them.
+
+      iex> Stopsel.Message.assign(%Stopsel.Message{}, key: :value)
+      %Stopsel.Message{assigns: %{key: :value}}
+
+      iex> assigns = %{key: :old_value}
+      iex> Stopsel.Message.assign(%Stopsel.Message{assigns: assigns}, key: :new_value)
+      %Stopsel.Message{assigns: %{key: :new_value}}
+
   """
   @spec assign(t(), map() | Keyword.t()) :: t()
   def assign(%__MODULE__{assigns: assigns} = message, new_assigns) do
@@ -47,6 +63,10 @@ defmodule Stopsel.Message do
 
   @doc """
   Prevents a message from advancing further down the pipeline.
+
+      iex> Stopsel.Message.halt(%Stopsel.Message{})
+      %Stopsel.Message{halted?: true}
+
   """
   @spec halt(t()) :: halted_message()
   def halt(%__MODULE__{} = message) do
@@ -55,6 +75,14 @@ defmodule Stopsel.Message do
 
   @doc """
   Adds an parameter to the message or overwrites it.
+
+      iex> Stopsel.Message.put_param(%Stopsel.Message{}, :key, :value)
+      %Stopsel.Message{params: %{key: :value}}
+
+      iex> params = %{key: :old_value}
+      iex> Stopsel.Message.put_param(%Stopsel.Message{params: params}, :key, :new_value)
+      %Stopsel.Message{params: %{key: :new_value}}
+
   """
   @spec put_param(t(), atom(), term()) :: t()
   def put_param(%__MODULE__{params: params} = message, key, value) do
@@ -62,7 +90,15 @@ defmodule Stopsel.Message do
   end
 
   @doc """
-  Adds many parametewrs or overwrites them.
+  Adds many parameters or overwrites them.
+
+      iex> Stopsel.Message.put_params(%Stopsel.Message{}, key: :value)
+      %Stopsel.Message{params: %{key: :value}}
+
+      iex> params = %{key: :old_value}
+      iex> Stopsel.Message.put_params(%Stopsel.Message{params: params}, key: :new_value)
+      %Stopsel.Message{params: %{key: :new_value}}
+
   """
   @spec put_params(t(), map() | Keyword.t()) :: t()
   def put_params(%__MODULE__{params: old_params} = message, new_params) do

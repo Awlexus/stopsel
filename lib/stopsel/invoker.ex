@@ -27,6 +27,25 @@ defmodule Stopsel.Invoker do
   * `{:multiple_matches, matches}` - Multiple matching routes where found for
     the message. This should be avoided.
   * `{:halted, message}` - The message was halted in the pipeline.
+
+  ```elixir
+  iex> import ExUnit.CaptureIO
+  iex> Stopsel.Router.load_router(MyApp.Router)
+  true
+  iex> capture_io(fn -> Stopsel.Invoker.invoke("hello", MyApp.Router) end)
+  "Hello world!\\n"
+  iex> Stopsel.Invoker.invoke("helloooo", MyApp.Router)
+  {:error, :no_match}
+  ```
+
+  Only loaded routes will be found.
+
+      iex> Stopsel.Router.load_router(MyApp.Router)
+      true
+      iex> Stopsel.Router.unload_route(MyApp.Router, ~w"hello")
+      iex> Stopsel.Invoker.invoke("hello", MyApp.Router)
+      {:error, :no_match}
+
   """
   @spec invoke(Message.t() | term(), Router.router()) ::
           {:ok, term} | {:error, reason()}
@@ -61,7 +80,22 @@ defmodule Stopsel.Invoker do
 
   @doc """
   Same as `invoke/2` but also checks that the message starts with the
-  specified prefix. Returns `{:error, :wrong_prefix}` otherwise.
+  specified prefix.
+
+  Returns `{:error, :wrong_prefix}` otherwise.
+
+      iex> import ExUnit.CaptureIO
+      iex> Stopsel.Router.load_router(MyApp.Router)
+      true
+      iex> capture_io(fn ->
+      ...>   assert {:ok, :ok} == Stopsel.Invoker.invoke("!hello", MyApp.Router, "!")
+      ...> end)
+      "Hello world!\\n"
+      iex> capture_io(fn ->
+      ...>  assert {:ok, :ok} == Stopsel.Invoker.invoke("!   hello", MyApp.Router, "!")
+      ...> end)
+      "Hello world!\\n"
+
   """
   @spec invoke(Message.t() | term(), Router.router(), String.t()) ::
           {:ok, term} | {:error, reason() | prefix_error()}

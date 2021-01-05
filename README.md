@@ -59,7 +59,7 @@ defmodule MyApp.Router do
       # Here we aliased the commands to not match against "add", "subtract", ...
       # but against "+", "-", ... and have an aditional parameter called "b"
       command :add, "+|:b"
-      command :subract, "-|:b"
+      command :subtract, "-|:b"
       command :multiply, "*|:b"
       command :divide, "/|:b"
     end

@@ -41,6 +41,33 @@ defmodule Stopsel.Router.Node do
     end
   end
 
+  def delete_all(node, [h]) do
+    nodes = node(node, :nodes)
+    new_nodes = Map.delete(nodes, h)
+    node(node, nodes: new_nodes)
+  end
+
+  def delete_all(node, [h | t]) do
+    nodes = node(node, :nodes)
+
+    case nodes do
+      %{^h => next_node} ->
+        new_node = delete_all(next_node, t)
+
+        new_nodes =
+          if empty?(new_node) do
+            Map.delete(nodes, h)
+          else
+            Map.put(nodes, h, new_node)
+          end
+
+        node(node, nodes: new_nodes)
+
+      _ ->
+        node
+    end
+  end
+
   def search_next(node, segment) do
     case node(node, :nodes) do
       %{^segment => node} -> node
@@ -56,6 +83,9 @@ defmodule Stopsel.Router.Node do
       end
     end)
   end
+
+  def empty?(node(value: nil, nodes: nodes)) when nodes == %{}, do: true
+  def empty?(_), do: false
 
   defp do_delete(node, []) do
     if Enum.empty?(node(node, :nodes)) do

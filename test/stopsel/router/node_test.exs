@@ -81,6 +81,53 @@ defmodule Stopsel.Router.NodeTest do
 
       assert Node.new() |> Node.insert(~w"hello back", :value) == node
     end
+
+    test "doesn't delete nodes after the given path" do
+      node =
+        Node.new()
+        |> Node.insert(~w"hello", :value)
+        |> Node.insert(~w"hello world", :value)
+        |> Node.delete(~w"hello")
+
+      expected = Node.insert(Node.new(), ~w"hello world", :value)
+
+      assert node == expected
+    end
+  end
+
+  describe "delete_all/2" do
+    test "deletes all nodes after the mentioned path" do
+      node =
+        Node.new()
+        |> Node.insert(~w"hello", :value)
+        |> Node.insert(~w"hello world", :value)
+        |> Node.delete_all(~w"hello")
+
+      assert node == Node.new()
+    end
+
+    test "deletes upper nodes, if they have no value" do
+      node =
+        Node.new()
+        |> Node.insert(~w"hello world", :value)
+        |> Node.delete_all(~w"hello world")
+
+      assert node == Node.new()
+    end
+
+    test "Deletes upper nodes until a value is found" do
+      node =
+        Node.new()
+        |> Node.insert(~w"hello", :value)
+        |> Node.insert(~w"hello world world", :value)
+        |> Node.delete_all(~w"hello world world")
+
+      expected =
+        Node.new()
+        |> Node.insert(~w"hello", :value)
+
+      assert node == expected
+    end
   end
 
   describe "search_next/2" do

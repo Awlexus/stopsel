@@ -10,6 +10,7 @@ defmodule Stopsel.Router.Node do
 
   def new(value \\ nil), do: node(value: value)
 
+  def insert(node, _, nil), do: node
   def insert(node, [], value), do: node(node, value: value)
 
   def insert(node, [h | t], value) do
@@ -23,21 +24,28 @@ defmodule Stopsel.Router.Node do
     node(node, nodes: Map.put(nodes, h, new_node))
   end
 
-  def delete(node, [h | t]) do
-    case search_next(node, h) do
-      nil ->
-        node
+  def delete(node, []) do
+    node(node, value: nil)
+  end
 
-      next_node ->
-        nodes = node(node, :nodes)
+  def delete(node, [h | t]) do
+    nodes = node(node, :nodes)
+
+    case nodes do
+      %{^h => next_node} ->
+        new_node = delete(next_node, t)
 
         new_nodes =
-          case do_delete(next_node, t) do
-            nil -> Map.delete(nodes, h)
-            new_node -> Map.put(nodes, h, new_node)
+          if empty?(new_node) do
+            Map.delete(nodes, h)
+          else
+            Map.put(nodes, h, new_node)
           end
 
         node(node, nodes: new_nodes)
+
+      nil ->
+        node
     end
   end
 
@@ -86,31 +94,4 @@ defmodule Stopsel.Router.Node do
 
   def empty?(node(value: nil, nodes: nodes)) when nodes == %{}, do: true
   def empty?(_), do: false
-
-  defp do_delete(node, []) do
-    if Enum.empty?(node(node, :nodes)) do
-      nil
-    else
-      node(node, value: nil)
-    end
-  end
-
-  defp do_delete(node, [h | t]) do
-    case node(node, :nodes) do
-      %{^h => next_node} = nodes ->
-        case do_delete(next_node, t) do
-          nil ->
-            case Map.delete(nodes, h) do
-              empty when empty == %{} ->
-                nil
-
-              new_nodes ->
-                node(node, nodes: new_nodes)
-            end
-        end
-
-      _ ->
-        node
-    end
-  end
 end

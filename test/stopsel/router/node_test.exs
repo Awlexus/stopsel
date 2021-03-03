@@ -87,9 +87,13 @@ defmodule Stopsel.Router.NodeTest do
         Node.new()
         |> Node.insert(~w"hello", :value)
         |> Node.insert(~w"hello world", :value)
-        |> Node.delete(~w"hello")
+        |> Node.insert(~w"hello world world", :value)
+        |> Node.delete(~w"hello world")
 
-      expected = Node.insert(Node.new(), ~w"hello world", :value)
+      expected =
+        Node.new()
+        |> Node.insert(~w"hello", :value)
+        |> Node.insert(~w"hello world world", :value)
 
       assert node == expected
     end

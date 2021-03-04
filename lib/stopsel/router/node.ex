@@ -44,7 +44,7 @@ defmodule Stopsel.Router.Node do
 
         node(node, nodes: new_nodes)
 
-      nil ->
+      _ ->
         node
     end
   end

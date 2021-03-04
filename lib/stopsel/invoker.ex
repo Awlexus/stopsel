@@ -51,7 +51,7 @@ defmodule Stopsel.Invoker do
           {:ok, term} | {:error, reason()}
   def invoke(%Message{} = message, router) do
     with {:ok, %Command{} = command} <-
-           Router.match_route(router, Utils.split_message(message.content)) do
+           Router.match_route(router, parse_path(message)) do
       message
       |> Message.assign(command.assigns)
       |> Message.put_params(command.params)
@@ -129,6 +129,14 @@ defmodule Stopsel.Invoker do
       {:ok, new_message}
     else
       {:error, :wrong_prefix}
+    end
+  end
+
+  defp parse_path(%Message{content: content}) do
+    try do
+      OptionParser.split(content)
+    rescue
+      _ -> Utils.split_message(content)
     end
   end
 

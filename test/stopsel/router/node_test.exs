@@ -175,4 +175,40 @@ defmodule Stopsel.Router.NodeTest do
       assert node == nil
     end
   end
+
+  describe "active_paths/1" do
+    test "shows routes" do
+      node =
+        Node.new()
+        |> Node.insert(~w"hello", :value)
+
+      assert Node.active_paths(node) == [~w"hello"]
+    end
+
+    test "ignores empty paths" do
+      node =
+        Node.new()
+        |> Node.insert(~w"hello world", :value)
+
+      assert Node.active_paths(node) == [~w"hello world"]
+    end
+
+    test "works with nested paths" do
+      node =
+        Node.new()
+        |> Node.insert(~w"hello", :value)
+        |> Node.insert(~w"hello world", :value)
+
+      assert Node.active_paths(node) == [~w"hello", ~w"hello world"]
+    end
+
+    test "correctly handles sibling nodes" do
+      node =
+        Node.new()
+        |> Node.insert(~w"hello world", :value)
+        |> Node.insert(~w"hello hello", :value)
+
+      assert Node.active_paths(node) == [~w"hello hello", ~w"hello world"]
+    end
+  end
 end

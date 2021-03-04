@@ -95,4 +95,17 @@ defmodule Stopsel.Router.Node do
 
   def empty?(node(value: nil, nodes: nodes)) when nodes == %{}, do: true
   def empty?(_), do: false
+
+  def active_paths(node, path \\ []) do
+    paths =
+      Enum.flat_map(node(node, :nodes), fn {key, node} ->
+        active_paths(node, [key | path])
+      end)
+
+    if node(node, :value) do
+      [:lists.reverse(path) | paths]
+    else
+      paths
+    end
+  end
 end

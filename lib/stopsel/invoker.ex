@@ -5,7 +5,7 @@ defmodule Stopsel.Invoker do
   This module relies on `Stopsel.Router` for matching the routes,
   which ensures that only active routes will be tried to match against.
   """
-  alias Stopsel.{Command, Message, Router}
+  alias Stopsel.{Command, Message, Router, Utils}
 
   require Logger
 
@@ -51,7 +51,7 @@ defmodule Stopsel.Invoker do
           {:ok, term} | {:error, reason()}
   def invoke(%Message{} = message, router) do
     with {:ok, %Command{} = command} <-
-           Router.match_route(router, parse_path(message)) do
+           Router.match_route(router, Utils.split_message(message.content)) do
       message
       |> Message.assign(command.assigns)
       |> Message.put_params(command.params)
@@ -130,16 +130,6 @@ defmodule Stopsel.Invoker do
     else
       {:error, :wrong_prefix}
     end
-  end
-
-  defp parse_path(%Message{content: message}) do
-    message
-    |> String.split(~r/["']/, trim: true)
-    |> Enum.with_index()
-    |> Enum.flat_map(fn
-      {part, index} when rem(index, 2) == 1 -> [part]
-      {part, _} -> String.split(part)
-    end)
   end
 
   defp apply_stopsel(message, stopsel) do

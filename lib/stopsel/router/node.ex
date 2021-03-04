@@ -83,6 +83,7 @@ defmodule Stopsel.Router.Node do
     end
   end
 
+  def search(nil, _), do: nil
   def search(node, path) do
     Enum.reduce_while(path, node, fn segment, node ->
       case search_next(node, segment) do

@@ -8,7 +8,8 @@ defmodule Stopsel.Command do
             module: nil,
             function: nil,
             assigns: %{},
-            params: %{}
+            params: %{},
+            rest: nil
 
   @type path :: [String.t()]
   @type command_function :: atom()

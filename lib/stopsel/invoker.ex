@@ -52,7 +52,7 @@ defmodule Stopsel.Invoker do
   def invoke(%Message{} = message, router) do
     with {:ok, %Command{} = command} <-
            Router.match_route(router, parse_path(message)) do
-      message
+      %{message | rest: command.rest}
       |> Message.assign(command.assigns)
       |> Message.put_params(command.params)
       |> apply_stopsel(command.stopsel)

@@ -9,24 +9,27 @@ defmodule Stopsel.Message do
   parameters on the other are assigned from the `Stopsel.Invoker` and
   contain the parameters that were declared in the matching route.
   """
-  defstruct assigns: %{}, params: %{}, halted?: false, content: nil
+  defstruct assigns: %{}, params: %{}, halted?: false, content: nil, rest: nil
 
   @type assigns :: map
   @type params :: map
   @type content :: String.t()
+  @type rest :: String.t() | nil
 
   @type halted_message :: %__MODULE__{
           assigns: assigns(),
           params: params(),
           content: content(),
-          halted?: true
+          halted?: true,
+          rest: rest()
         }
 
   @type t :: %__MODULE__{
           assigns: assigns(),
           params: params(),
           halted?: boolean(),
-          content: content()
+          content: content(),
+          rest: rest()
         }
 
   @doc """

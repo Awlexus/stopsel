@@ -34,16 +34,19 @@ defmodule Stopsel.Router do
   use GenServer
 
   alias Stopsel.Command
+  alias Stopsel.Router.Node
+  require Node
+  import Kernel, except: [node: 0, node: 1]
 
   @type path :: [String.t()]
   @type router :: module()
 
-  @type match_error :: :no_match | {:multiple_matches, [Command.t()]}
+  @type match_error :: :no_match
   @doc false
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
   @doc false
-  def init(_), do: {:ok, nil}
+  def init(_), do: {:ok, Node.new()}
 
   @doc """
   Loads all commands from the given module into the router.
@@ -76,7 +79,7 @@ defmodule Stopsel.Router do
       true
 
   """
-  @spec unload_router(router()) :: boolean()
+  @spec unload_router(router()) :: true
   def unload_router(router), do: GenServer.call(__MODULE__, {:unload_router, router})
 
   @doc """
@@ -103,7 +106,7 @@ defmodule Stopsel.Router do
       false
 
   """
-  @spec unload_route(router(), path()) :: boolean()
+  @spec unload_route(router(), path()) :: true
   def unload_route(router, path), do: GenServer.call(__MODULE__, {:unload_route, router, path})
 
   @doc """
@@ -117,23 +120,46 @@ defmodule Stopsel.Router do
       {:error, :no_match}
 
   """
-  @spec match_route(router(), path()) :: {:ok, Command.t()} | {:error, match_error()}
+  @spec match_route(router(), path()) ::
+          {:ok, Command.t()} | {:error, match_error()}
   def match_route(router, path) do
-    if router_exists?(router) do
-      case :router.route(router, compile_path(path)) do
-        [{:route, %Command{} = command, params}] ->
-          {:ok, %{command | params: Map.new(params)}}
-
-        [] ->
-          {:error, :no_match}
-
-        matches ->
-          matches = Enum.map(matches, &elem(&1, 2))
-
-          {:error, {:multiple_matches, matches}}
-      end
+    with node when node != nil <- node(router),
+         %Command{} = command <- do_match(node, path, %{}) do
+      {:ok, command}
     else
-      {:error, :no_match}
+      _ -> {:error, :no_match}
+    end
+  end
+
+  defp do_match(node, [], params) do
+    if command = Node.node(node, :value), do: %{command | params: params}
+  end
+
+  defp do_match(node, [h | t], params) do
+    nodes = Node.node(node, :nodes)
+
+    cond do
+      next = Map.get(nodes, h) ->
+        do_match(next, t, params)
+
+      Enum.any?(nodes, &is_atom(elem(&1, 0))) ->
+        nodes
+        |> Enum.filter(&is_atom(elem(&1, 0)))
+        |> Enum.find_value(fn {param, node} ->
+          do_match(node, t, Map.put(params, param, h))
+        end)
+
+      nodes == %{} ->
+        case Node.node(node, :value) do
+          %Command{} = command ->
+            %{command | params: params, rest: Enum.join([h | t], " ")}
+
+          _ ->
+            nil
+        end
+
+      true ->
+        nil
     end
   end
 
@@ -142,91 +168,74 @@ defmodule Stopsel.Router do
   """
   @spec routes(router()) :: [[String.t()]]
   def routes(router) do
-    if router_exists?(router) do
-      router
-      |> :router.paths()
-      |> Enum.map(fn path ->
-        Enum.map(path, fn
-          {:+, name} -> ":#{name}"
-          name -> name
+    case node(router) do
+      nil ->
+        []
+
+      node ->
+        node
+        |> Node.active_paths()
+        |> Enum.map(fn path ->
+          Enum.map(path, fn
+            segment when is_atom(segment) -> ":" <> to_string(segment)
+            segment -> segment
+          end)
         end)
-      end)
-    else
-      []
     end
   end
 
-  def handle_call({:load_router, module}, _, state) do
-    if router_exists?(module) do
-      :router.delete(module)
-    end
+  def handle_call({:load_router, module}, _, node) do
+    node = Node.delete_all(node, [module])
 
-    :router.new(module)
-    Enum.each(module.__commands__(), &add_route(module, &1))
+    node =
+      Enum.reduce(
+        module.__commands__(),
+        node,
+        &Node.insert(&2, [module | compile_path(&1.path)], &1)
+      )
 
-    {:reply, true, state}
+    {:reply, true, node}
   end
 
-  def handle_call({:unload_router, module}, _, state) do
-    {:reply, router_exists?(module) && :router.delete(module), state}
+  def handle_call({:unload_router, module}, _, node) do
+    {:reply, true, Node.delete_all(node, [module])}
   end
 
-  def handle_call({:load_route, module, path}, _, state) do
-    unless router_exists?(module) do
-      :router.new(module)
-    end
-
-    result =
+  def handle_call({:load_route, module, path}, _, node) do
+    {result, node} =
       case find_route(module, path) do
-        nil ->
-          false
-
-        route ->
-          add_route(module, route)
-          true
+        nil -> {false, node}
+        route -> {true, Node.insert(node, [module | compile_path(path)], route)}
       end
 
-    {:reply, result, state}
+    {:reply, result, node}
   end
 
-  def handle_call({:unload_route, module, path}, _, state) do
-    result =
-      with true <- router_exists?(module),
-           route when not is_nil(route) <- find_route(module, path) do
-        remove_route(module, route)
-        true
+  def handle_call({:unload_route, module, path}, _, node) do
+    {result, node} =
+      if find_route(module, path) do
+        {true, Node.delete(node, [module | path])}
       else
-        _ -> false
+        {false, node}
       end
 
-    {:reply, result, state}
+    {:reply, result, node}
   end
 
-  defp find_route(module, path) do
+  def handle_call({:nodes, router_name}, _, router) do
+    {:reply, Node.search_next(router, router_name), router}
+  end
+
+  def find_route(module, path) do
     Enum.find(module.__commands__(), &(&1.path == path))
   end
 
-  defp add_route(module, %Command{} = command) do
-    :router.add(module, compile_path(command.path), command)
-  end
-
-  defp remove_route(module, %Command{} = command) do
-    :router.remove_path(module, compile_path(command.path), command)
-  end
+  defp node(router), do: GenServer.call(__MODULE__, {:nodes, router})
 
   defp compile_path(path) do
     Enum.map(path, fn
-      ":" <> param -> {:+, String.to_atom(param)}
+      ":" <> param -> String.to_atom(param)
       segment -> segment
     end)
-  end
-
-  defp router_exists?(module) do
-    try do
-      :router.info(module)
-      true
-    catch
-      :not_found -> false
-    end
   end
 end

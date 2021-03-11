@@ -14,7 +14,7 @@ defmodule Stopsel.Message do
   @type assigns :: map
   @type params :: map
   @type content :: String.t()
-  @type rest :: String.t() | nil
+  @type rest :: [String.t()]
 
   @type halted_message :: %__MODULE__{
           assigns: assigns(),

@@ -9,7 +9,7 @@ defmodule Stopsel.Command do
             function: nil,
             assigns: %{},
             params: %{},
-            rest: nil
+            rest: []
 
   @type path :: [String.t()]
   @type command_function :: atom()
@@ -17,6 +17,7 @@ defmodule Stopsel.Command do
   @type stopsel :: {module() | {module(), command_function()}, stopsel_opts()}
   @type assigns :: map()
   @type params :: map()
+  @type rest :: [String.t()]
 
   @type t :: %__MODULE__{
           path: path(),
@@ -24,6 +25,7 @@ defmodule Stopsel.Command do
           module: module(),
           function: command_function(),
           assigns: assigns(),
-          params: assigns()
+          params: assigns(),
+          rest: rest()
         }
 end

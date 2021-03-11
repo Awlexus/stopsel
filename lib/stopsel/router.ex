@@ -152,7 +152,7 @@ defmodule Stopsel.Router do
       nodes == %{} ->
         case Node.node(node, :value) do
           %Command{} = command ->
-            %{command | params: params, rest: Enum.join([h | t], " ")}
+            %{command | params: params, rest: [h | t]}
 
           _ ->
             nil

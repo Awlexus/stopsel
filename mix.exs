@@ -30,7 +30,6 @@ defmodule Stopsel.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:router, "~> 1.0"},
       {:ex_doc, "~> 0.23", only: :dev, runtime: false}
     ]
   end

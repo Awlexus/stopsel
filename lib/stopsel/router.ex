@@ -20,10 +20,10 @@ defmodule Stopsel.Router do
             stopsel :parse_number, :a
             stopsel :parse_number, :b
 
-            command :add, "+ :b"
-            command :subtract, "- :b"
-            command :multiply, "* :b"
-            command :divide, "/ :b"
+            command :add, path: "+ :b"
+            command :subtract, path: "- :b"
+            command :multiply, path: "* :b"
+            command :divide, path: "/ :b"
           end
         end
       end

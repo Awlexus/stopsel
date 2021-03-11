@@ -129,7 +129,7 @@ defmodule Stopsel.BuilderTest do
         import Stopsel.Builder
 
         router MyApp do
-          command(:hello, "hihi")
+          command(:hello, path: "hihi")
         end
       end
 

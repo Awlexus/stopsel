@@ -161,9 +161,17 @@ defmodule Stopsel.Builder do
   added to the message before the stopsel are executed.
 
   Cannot be declared outside of the router.
+
+  Options:
+    * `:path` - Aliases the path used for the current command.
+    Uses the name of the command by default
+    * `:assigns` - add additional assigns to the message
   """
-  @spec command(name(), path(), assigns()) :: Macro.t()
-  defmacro command(name, path \\ nil, assigns \\ []) do
+  @spec command(name(), [{:path, path()}, {:assigns, assigns()}]) :: Macro.t()
+  defmacro command(name, opts \\ []) do
+    path = Keyword.get(opts, :path)
+    assigns = Keyword.get(opts, :assigns, [])
+
     quote location: :keep do
       unquote(in_router!({:command, 2}))
 

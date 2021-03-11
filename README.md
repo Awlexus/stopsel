@@ -58,10 +58,10 @@ defmodule MyApp.Router do
 
       # Here we aliased the commands to not match against "add", "subtract", ...
       # but against "+", "-", ... and have an aditional parameter called "b"
-      command :add, "+ :b"
-      command :subtract, "- :b"
-      command :multiply, "* :b"
-      command :divide, "/ :b"
+      command :add, path: "+ :b"
+      command :subtract, path: "- :b"
+      command :multiply, path: "* :b"
+      command :divide, path: "/ :b"
     end
   end
 end
@@ -86,7 +86,7 @@ As seen above, a function that handles a command must accept 2 arguments
 In the example above we have created a route like this.
 ```elixir
 scope "calculator :a", Calculator do
-  command :add, "+ :b"
+  command :add, path: "+ :b"
   ...
 end
 ```
@@ -166,12 +166,12 @@ iex> Stopsel.Invoker.invoke("hello", MyApp.Router, "!")
 
 ### Roadmap
 * [ ] Improve documentation (ongoing effort)
-* [ ] Add Tests
-* [ ] Improve invoker message parsing
-* [ ] Do not use captured functions internally for routes
-* [ ] Turn routes into structs
+* [x] Add Tests
+* [x] Improve invoker message parsing
+* [x] Do not use captured functions internally for routes
+* [x] Turn routes into structs
 * [ ] Add attributes to scopes and commands such as help descriptions
 * [ ] Make it possible to use locally defined functions for stopsel
 * [ ] Make it possible to use functions from aliased modules for stopsel
 * [ ] Find a way to avoid warnings from imported functions that are used as stopsel
-* [ ] Remove dependency `:router`
+* [x] Remove dependency `:router`

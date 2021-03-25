@@ -110,7 +110,9 @@ defmodule Stopsel.Builder do
 
       unquote(block)
 
-      def __commands__(), do: @commands
+      def __commands__(), do: Enum.reject(@commands, &is_nil/1)
+
+      Module.delete_attribute(__MODULE__, :commands)
 
       @in_router? false
       @router_defined? true

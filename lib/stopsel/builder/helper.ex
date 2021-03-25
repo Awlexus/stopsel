@@ -25,15 +25,22 @@ defmodule Stopsel.Builder.Helper do
   end
 
   def command([%Scope{} = scope | _], name, path, assigns) do
-    ensure_command_compiled!(scope.module, name, 2)
+    if command_compiled?(scope.module, name, 2) do
 
-    %Command{
-      path: parse_path(scope.path, path),
-      stopsel: scope.stopsel,
-      module: scope.module,
-      function: name,
-      assigns: Map.new(assigns)
-    }
+      command =
+        %Command{
+          path: parse_path(scope.path, path),
+          stopsel: scope.stopsel,
+          module: scope.module,
+          function: name,
+          assigns: Map.new(assigns)
+        }
+
+      command
+    else
+      IO.warn("#{scope.module}.#{name}/2 does not exist")
+      nil
+    end
   end
 
   defp parse_path(prefix, nil), do: prefix
@@ -65,12 +72,10 @@ defmodule Stopsel.Builder.Helper do
     end
   end
 
-  defp ensure_command_compiled!(module, name, arity) do
-    with {:module, ^module} <- Code.ensure_compiled(module),
-         true <- function_exported?(module, name, arity) do
-      :ok
-    else
-      _ -> raise UndefinedFunctionError, module: module, function: name, arity: arity
+  defp command_compiled?(module, name, arity) do
+    case Code.ensure_compiled(module) do
+      {:module, ^module} -> function_exported?(module, name, arity)
+      _ -> false
     end
   end
 end

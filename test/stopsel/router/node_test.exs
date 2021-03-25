@@ -3,7 +3,7 @@ defmodule Stopsel.Router.NodeTest do
   alias Stopsel.Router.Node
   import Kernel, except: [node: 0, node: 1]
 
-  import Node, only: [node: 0, node: 1, node: 2]
+  import Node, only: [node: 0, node: 1]
 
   describe "new/0" do
     test "creates new node" do

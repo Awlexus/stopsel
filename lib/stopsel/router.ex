@@ -184,6 +184,23 @@ defmodule Stopsel.Router do
     end
   end
 
+  @doc """
+  Returns a list of all loaded commands for this router
+  """
+  @spec loaded_commands(router()) :: [Command.t()]
+  def loaded_commands(router) do
+    case node(router) do
+      nil -> []
+      node -> Node.values(node)
+    end
+  end
+
+  def find_route(module, path) do
+    Enum.find(module.__commands__(), &(&1.path == path))
+  end
+
+  ### GenServer handles
+
   def handle_call({:load_router, module}, _, node) do
     node = Node.delete_all(node, [module])
 
@@ -198,6 +215,8 @@ defmodule Stopsel.Router do
   end
 
   def handle_call({:unload_router, module}, _, node) do
+    router = Node.search_next(node, module)
+    spawn(fn -> free_router_docs(router) end)
     {:reply, true, Node.delete_all(node, [module])}
   end
 
@@ -213,7 +232,8 @@ defmodule Stopsel.Router do
 
   def handle_call({:unload_route, module, path}, _, node) do
     {result, node} =
-      if find_route(module, path) do
+      if command = find_route(module, path) do
+        Command.free_docs(command)
         {true, Node.delete(node, [module | path])}
       else
         {false, node}
@@ -226,10 +246,6 @@ defmodule Stopsel.Router do
     {:reply, Node.search_next(router, router_name), router}
   end
 
-  def find_route(module, path) do
-    Enum.find(module.__commands__(), &(&1.path == path))
-  end
-
   defp node(router), do: GenServer.call(__MODULE__, {:nodes, router})
 
   defp compile_path(path) do
@@ -237,5 +253,13 @@ defmodule Stopsel.Router do
       ":" <> param -> String.to_atom(param)
       segment -> segment
     end)
+  end
+
+  defp free_router_docs(nil), do: :ok
+
+  defp free_router_docs(router) do
+    Node.node(value: value, nodes: nodes) = router
+    with %Command{} <- value, do: Command.free_docs(value)
+    Enum.each(nodes, fn {_, next} -> free_router_docs(next) end)
   end
 end

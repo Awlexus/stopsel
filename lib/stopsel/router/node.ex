@@ -84,6 +84,7 @@ defmodule Stopsel.Router.Node do
   end
 
   def search(nil, _), do: nil
+
   def search(node, path) do
     Enum.reduce_while(path, node, fn segment, node ->
       case search_next(node, segment) do
@@ -106,6 +107,19 @@ defmodule Stopsel.Router.Node do
       [:lists.reverse(path) | paths]
     else
       paths
+    end
+  end
+
+  def values(nil), do: []
+
+  def values(node) do
+    node(value: value, nodes: nodes) = node
+    values = Enum.flat_map(nodes, &values(elem(&1, 1)))
+
+    if value do
+      [value | values]
+    else
+      values
     end
   end
 end

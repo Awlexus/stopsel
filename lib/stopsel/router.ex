@@ -213,8 +213,13 @@ defmodule Stopsel.Router do
   end
 
   def handle_call({:unload_router, module}, _, table) do
+    with [{_, node}] <- :ets.lookup(table, module) do
+      node
+      |> Node.values()
+      |> Enum.each(&Command.free_docs/1)
+    end
+
     :ets.delete(table, module)
-    spawn(fn -> free_router_docs(module) end)
     {:reply, true, table}
   end
 
@@ -260,14 +265,6 @@ defmodule Stopsel.Router do
       ":" <> param -> String.to_atom(param)
       segment -> segment
     end)
-  end
-
-  defp free_router_docs(nil), do: :ok
-
-  defp free_router_docs(router) do
-    Node.node(value: value, nodes: nodes) = router
-    with %Command{} <- value, do: Command.free_docs(value)
-    Enum.each(nodes, fn {_, next} -> free_router_docs(next) end)
   end
 
   defp update_node(module, fun) do

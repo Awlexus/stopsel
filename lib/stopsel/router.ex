@@ -42,11 +42,15 @@ defmodule Stopsel.Router do
   @type router :: module()
 
   @type match_error :: :no_match
+
   @doc false
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
   @doc false
-  def init(_), do: {:ok, Node.new()}
+  def init(_) do
+    table = :ets.new(__MODULE__, [:named_table, :protected, {:read_concurrency, true}])
+    {:ok, table}
+  end
 
   @doc """
   Loads all commands from the given module into the router.
@@ -118,12 +122,11 @@ defmodule Stopsel.Router do
       {:ok, %Stopsel.Command{path: ~w"hello", function: :hello, module: MyApp}}
       iex> Stopsel.Router.match_route(MyApp.Router, ~w"hellooo")
       {:error, :no_match}
-
   """
   @spec match_route(router(), path()) ::
           {:ok, Command.t()} | {:error, match_error()}
   def match_route(router, path) do
-    with node when node != nil <- node(router),
+    with [{_, node}] <- :ets.lookup(__MODULE__, router),
          %Command{} = command <- do_match(node, path, %{}) do
       {:ok, command}
     else
@@ -168,19 +171,15 @@ defmodule Stopsel.Router do
   """
   @spec routes(router()) :: [[String.t()]]
   def routes(router) do
-    case node(router) do
-      nil ->
-        []
-
-      node ->
-        node
-        |> Node.active_paths()
-        |> Enum.map(fn path ->
-          Enum.map(path, fn
-            segment when is_atom(segment) -> ":" <> to_string(segment)
-            segment -> segment
-          end)
+    with [{_, node}] <- :ets.lookup(__MODULE__, router) do
+      node
+      |> Node.active_paths()
+      |> Enum.map(fn path ->
+        Enum.map(path, fn
+          segment when is_atom(segment) -> ":" <> to_string(segment)
+          segment -> segment
         end)
+      end)
     end
   end
 
@@ -189,9 +188,8 @@ defmodule Stopsel.Router do
   """
   @spec loaded_commands(router()) :: [Command.t()]
   def loaded_commands(router) do
-    case node(router) do
-      nil -> []
-      node -> Node.values(node)
+    with [{_, node}] <- :ets.lookup(__MODULE__, router) do
+      Node.values(node)
     end
   end
 
@@ -201,52 +199,61 @@ defmodule Stopsel.Router do
 
   ### GenServer handles
 
-  def handle_call({:load_router, module}, _, node) do
-    node = Node.delete_all(node, [module])
-
+  def handle_call({:load_router, module}, _, table) do
     node =
       Enum.reduce(
         module.__commands__(),
-        node,
-        &Node.insert(&2, [module | compile_path(&1.path)], &1)
+        Node.new(),
+        &Node.insert(&2, compile_path(&1.path), &1)
       )
 
-    {:reply, true, node}
+    :ets.insert(table, {module, node})
+
+    {:reply, true, table}
   end
 
-  def handle_call({:unload_router, module}, _, node) do
-    router = Node.search_next(node, module)
-    spawn(fn -> free_router_docs(router) end)
-    {:reply, true, Node.delete_all(node, [module])}
+  def handle_call({:unload_router, module}, _, table) do
+    :ets.delete(table, module)
+    spawn(fn -> free_router_docs(module) end)
+    {:reply, true, table}
   end
 
-  def handle_call({:load_route, module, path}, _, node) do
-    {result, node} =
+  def handle_call({:load_route, module, path}, _, table) do
+    result =
       case find_route(module, path) do
-        nil -> {false, node}
-        route -> {true, Node.insert(node, [module | compile_path(path)], route)}
+        nil ->
+          false
+
+        route ->
+          update_node(module, &Node.insert(&1, compile_path(path), route))
+          true
       end
 
-    {:reply, result, node}
+    {:reply, result, table}
   end
 
-  def handle_call({:unload_route, module, path}, _, node) do
-    {result, node} =
+  def handle_call({:unload_route, module, path}, _, table) do
+    result =
       if command = find_route(module, path) do
         Command.free_docs(command)
-        {true, Node.delete(node, [module | path])}
+        update_node(module, &Node.delete(&1, path))
+        true
       else
-        {false, node}
+        false
       end
 
-    {:reply, result, node}
+    {:reply, result, table}
   end
 
-  def handle_call({:nodes, router_name}, _, router) do
-    {:reply, Node.search_next(router, router_name), router}
-  end
+  def handle_call({:nodes, module}, _, table) do
+    result =
+      case :ets.lookup(table, module) do
+        [{_, node}] -> node
+        _ -> nil
+      end
 
-  defp node(router), do: GenServer.call(__MODULE__, {:nodes, router})
+    {:reply, result, table}
+  end
 
   defp compile_path(path) do
     Enum.map(path, fn
@@ -261,5 +268,15 @@ defmodule Stopsel.Router do
     Node.node(value: value, nodes: nodes) = router
     with %Command{} <- value, do: Command.free_docs(value)
     Enum.each(nodes, fn {_, next} -> free_router_docs(next) end)
+  end
+
+  defp update_node(module, fun) do
+    node =
+      case :ets.lookup(__MODULE__, module) do
+        [{_, node}] -> node
+        _ -> Node.new()
+      end
+
+    :ets.insert(__MODULE__, {module, fun.(node)})
   end
 end

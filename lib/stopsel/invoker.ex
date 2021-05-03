@@ -72,7 +72,8 @@ defmodule Stopsel.Invoker do
   def invoke(message, router) do
     message = %Message{
       assigns: Message.Protocol.assigns(message),
-      content: Message.Protocol.content(message)
+      content: Message.Protocol.content(message),
+      params: Message.Protocol.params(message)
     }
 
     invoke(message, router)
